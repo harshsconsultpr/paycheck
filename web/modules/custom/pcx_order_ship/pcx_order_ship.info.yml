@@ -1,0 +1,5 @@
+name: Paycheck Exchange Order Ship
+type: module
+description: Order ship logic.
+core: 8.x
+package: Custom

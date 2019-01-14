@@ -1,0 +1,60 @@
+<?php
+/**
+ * @file
+ * Installation file for miniOrange SAML Module.
+ */
+
+/**
+ * hook_uninstall not needed.
+ * Configure variables are cleared when module is uninstalled.
+ **/
+
+
+/**
+ * Implements hook_install().
+ */
+function miniorange_saml_idp_install() {
+  \Drupal::configFactory()->getEditable('miniorange_saml_idp.settings')->set('miniorange_saml_email_attribute', 'NameID')->save();
+  \Drupal::configFactory()->getEditable('miniorange_saml_idp.settings')->set('miniorange_saml_username_attribute', 'NameID')->save();
+  if(!db_table_exists('miniorange_saml_idp_user')){ 
+  drupal_install_schema('miniorange_saml_idp');	
+  }
+}
+
+
+
+/**
+* Implementation of hook_schema().
+*/
+function miniorange_saml_idp_schema() {
+  $schema['miniorange_saml_idp_user'] = array(
+    'description' => t('User Storage'),
+    'fields' => array(
+	  'id' => array(
+        'description' => 'The primary identifier.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+	  ),
+	  'uid' => array(
+        'type' => 'int',
+        'not null' => FALSE,
+        'description' => t('The {user}.uid of the user.'),
+      ),
+	  'mail' => array(
+        'description' => 'The mail of the user.',
+        'type' => 'varchar',
+        'length' => 254,
+	  ),
+	  'UserIn' => array(
+        'type' => 'int',
+		'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => t('The UserIn of the user.'),
+      ),
+	),
+	'primary key' => array('id'),
+  );
+  return $schema;  
+}

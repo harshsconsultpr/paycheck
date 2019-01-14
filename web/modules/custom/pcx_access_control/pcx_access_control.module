@@ -1,0 +1,21 @@
+<?php
+
+use Drupal\Core\Session\AccountInterface;
+use Drupal\node\NodeInterface;
+use Drupal\Core\Access\AccessResult;
+
+
+function pcx_access_control_node_access(\Drupal\node\NodeInterface $node, $op, \Drupal\Core\Session\AccountInterface $account){
+
+  // List of NID's that Anonymous users can view, all others will be blocked
+  $node_ids = array(2,3,4,5,7);
+  $nid = $node->id(); // Current NID
+
+  if (\Drupal::currentUser()->isAnonymous()) {
+    if (!in_array($nid, $node_ids)){
+      return AccessResult::forbidden();
+    }
+  }
+  return AccessResult::neutral();
+  //$roles = $account->getRoles();
+}

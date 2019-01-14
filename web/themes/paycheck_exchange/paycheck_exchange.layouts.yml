@@ -1,0 +1,12 @@
+two_col:
+  label: Two Columns
+  category: Display Suite
+  class: '\Drupal\ds\Plugin\DsLayout'
+  type: partial
+  template: ds_layouts/two-col/two-col
+  icon: ds_layouts/two-col/two-col.png
+  regions:
+    left:
+      label: Left
+    right:
+      label: Right

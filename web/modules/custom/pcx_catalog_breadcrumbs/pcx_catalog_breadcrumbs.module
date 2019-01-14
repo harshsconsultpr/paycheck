@@ -1,0 +1,80 @@
+<?php
+
+use Drupal\Core\Breadcrumb\Breadcrumb;
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Link;
+use Drupal\Core\Url;
+/**
+ * Implements hook_system_breadcrumb_alter().
+ *
+ * Append node title to breadcrumb for certain content types and views that are
+ * not in the menu.
+ *
+ * @param \Drupal\Core\Breadcrumb\Breadcrumb $breadcrumb
+ * @param \Drupal\Core\Routing\RouteMatchInterface $route_match
+ * @param array $context
+ */
+
+function pcx_catalog_breadcrumbs_system_breadcrumb_alter(Breadcrumb &$breadcrumb, RouteMatchInterface $route_match, array $context) {
+  if ($breadcrumb && !\Drupal::service('router.admin_context')->isAdminRoute()) {
+
+    $route_match->getRouteName();
+
+    /*
+    if ($route_match->getRouteName() == 'view.product_display_view.page_1'){
+      $links = $breadcrumb->getLinks();
+      \Drupal::logger('$links')->notice('<pre>' . print_r($links,1) . '</pre>');
+    }*/
+
+    if ($route_match->getRouteName() == 'entity.taxonomy_term.canonical') {
+      $alias = \Drupal::request()->getpathInfo();
+      $args  = explode('/',$alias);
+
+      if ($args[1] == 'catalog'){
+
+        $links = array();
+        $breadcrumb = new Breadcrumb();
+        $breadcrumb->setLinks($links);
+
+        $breadcrumbs = array();
+        $path = \Drupal::service('path.alias_manager')->getPathByAlias($alias);
+        $args  = explode('/',$path);
+        $tid = $args[3];
+        $top_term_tid = $tid; // for later use
+
+        do{
+          $parent = \Drupal::entityTypeManager()->getStorage('taxonomy_term')->loadParents($tid);
+          $parent = reset($parent);
+          if ($parent){
+            $tid = $parent->id();
+            $breadcrumbs[$tid] = $tid;
+          }
+        }while (!empty($parent));
+
+        // Add home and catalog
+        $url = Url::fromRoute('<front>');
+        $breadcrumb->addLink(Link::fromTextAndUrl('Home', $url));
+
+        $url = Url::fromRoute('view.catalog_taxonomy.page_2');
+        $breadcrumb->addLink(Link::fromTextAndUrl('All Products', $url));
+
+        $breadcrumbs = array_reverse($breadcrumbs);
+
+        foreach ($breadcrumbs as $breadcrumb_item => $tid){
+          if ($term = taxonomy_term_load($tid)) {
+            if ($link = $term->toLink()) {
+              if ($breadcrumb) {
+                $breadcrumb->addLink($link);
+              }
+            }
+          }
+        }
+
+        $breadcrumb->addCacheTags(['entity.taxonomy_term.canonical.' . $top_term_tid]);
+        $breadcrumb->addCacheContexts(['route.name']);
+        return $breadcrumb;
+      }
+
+    }
+  }
+}

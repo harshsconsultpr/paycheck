@@ -1,0 +1,105 @@
+# Migration configuration for news content.
+id: pcx_products
+label: PCX Products
+migration_tags:
+  - CSV
+migration_group: pcx
+source:
+  plugin: pcx_products
+  path: sites/default/files/integrations/import/catalog/products.csv
+  header_row_count: 1
+  keys:
+    - VSN
+  column_names:
+    -
+      Brand: 'Brand'
+    -
+      MPN: 'MPN'
+    -
+      VSN: 'VSN'
+    -
+      InStock: 'In Stock'
+    -
+      Shipping Price: 'Shipping Price'
+    -
+      Title: 'Title'
+    -
+      Description: 'Description'
+    -
+      MSRP: 'MSRP'
+    -
+      Category: 'Category'
+    -
+      CategoryImage: 'Category Image'
+    -
+      Attributes: Attributes
+    -
+      Main Image: 'Main Image'
+    -
+      ALT Image 1: 'ALT Image 1'
+    -
+      ALT Image 2: 'ALT Image 2'
+    -
+      ALT Image 3: 'ALT Image 3'
+    -
+      ALT Image 4: 'ALT Image 4'
+    -
+      ALT Image 5: 'ALT Image 5'
+destination:
+  plugin: 'entity:commerce_product'
+process:
+  type:
+    plugin: default_value
+    default_value: default
+  'stores/target_id':
+    plugin: default_value
+    default_value: 1
+  status: InStock
+  field_product_brand:
+    plugin: entity_generate
+    source: Brand
+    value_key: name
+    bundle: brand
+    entity_type: taxonomy_term
+    ignore_case: true
+  field_product_category:
+    -
+      plugin: skip_on_empty
+      method: process
+      source: Category
+    -
+      plugin: entity_lookup
+      source: Category
+      value_key: name
+      bundle_key: vid
+      bundle: catalog_category
+      entity_type: taxonomy_term
+      ignore_case: true
+  field_abt_product_vsn: VSN
+  field_product_vsn: VSN
+  field_product_mpn: MPN
+  field_product_shipping_price: 'Shipping Price'
+  field_product_msrp: MSRP
+  title: Title
+  'body/format':
+    plugin: default_value
+    default_value: full_html
+  'body/value': Description
+  created: created
+  uid:
+    plugin: default_value
+    default_value: 1
+  field_product_instock: InStock
+  field_remote_image:
+    plugin: iterator
+    source: Images
+    process:
+      uri: uri
+      title: title
+      alt: alt
+  field_product_features:
+    plugin: iterator
+    source: Features
+    process:
+      value: value
+  variations: variation

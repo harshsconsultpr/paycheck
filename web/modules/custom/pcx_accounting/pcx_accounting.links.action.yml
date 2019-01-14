@@ -1,0 +1,30 @@
+entity.commission_statement.add_form:
+  route_name: entity.commission_statement.add_form
+  title: 'Add Commission Statement'
+  appears_on:
+    - entity.commission_statement.collection
+entity.organization_invoice.add_form:
+  route_name: entity.organization_invoice.add_form
+  title: 'Add Organization Invoice'
+  appears_on:
+    - entity.organization_invoice.collection
+entity.deduction_file.add_form:
+  route_name: entity.deduction_file.add_form
+  title: 'Add Deduction File'
+  appears_on:
+    - entity.deduction_file.collection
+entity.organization_invoice_line_item.add_form:
+  route_name: entity.organization_invoice_line_item.add_form
+  title: 'Add Organization invoice line item'
+  appears_on:
+    - entity.organization_invoice_line_item.collection
+entity.deduction_file_line_item.add_form:
+  route_name: entity.deduction_file_line_item.add_form
+  title: 'Add Deduction file line item'
+  appears_on:
+    - entity.deduction_file_line_item.collection
+entity.commission_statement_line_item.add_form:
+  route_name: entity.commission_statement_line_item.add_form
+  title: 'Add Commission statement line item'
+  appears_on:
+    - entity.commission_statement_line_item.collection

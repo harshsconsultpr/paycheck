@@ -1,0 +1,58 @@
+<?php
+
+/**
+ * @file
+ * Contains pcx_orgs.module.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+ * Implements hook_help().
+ */
+function pcx_orgs_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main module help for the pcx_orgs module.
+    case 'help.page.pcx_orgs':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Paycheck Exchange Organization Entity') . '</p>';
+      return $output;
+
+    default:
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function pcx_orgs_theme() {
+  $theme = [];
+  $theme['organization'] = [
+    'render element' => 'elements',
+    'file' => 'organization.page.inc',
+    'template' => 'organization',
+  ];
+  $theme['organization_content_add_list'] = [
+    'render element' => 'content',
+    'variables' => ['content' => NULL],
+    'file' => 'organization.page.inc',
+  ];
+  return $theme;
+}
+
+/**
+* Implements hook_theme_suggestions_HOOK().
+*/
+function pcx_orgs_theme_suggestions_organization(array $variables) {
+  $suggestions = [];
+  $entity = $variables['elements']['#organization'];
+  $sanitized_view_mode = strtr($variables['elements']['#view_mode'], '.', '_');
+
+  $suggestions[] = 'organization__' . $sanitized_view_mode;
+  $suggestions[] = 'organization__' . $entity->bundle();
+  $suggestions[] = 'organization__' . $entity->bundle() . '__' . $sanitized_view_mode;
+  $suggestions[] = 'organization__' . $entity->id();
+  $suggestions[] = 'organization__' . $entity->id() . '__' . $sanitized_view_mode;
+  return $suggestions;
+}

@@ -1,0 +1,132 @@
+add commission statement entities:
+  title: 'Create new Commission Statement entities'
+
+administer commission statement entities:
+  title: 'Administer Commission Statement entities'
+  description: 'Allow to access the administration form to configure Commission Statement entities.'
+  restrict access: true
+
+delete commission statement entities:
+  title: 'Delete Commission Statement entities'
+
+edit commission statement entities:
+  title: 'Edit Commission Statement entities'
+
+access commission statement overview:
+  title: 'Access the Commission Statement overview page'
+
+view published commission statement entities:
+  title: 'View published Commission Statement entities'
+
+view unpublished commission statement entities:
+  title: 'View unpublished Commission Statement entities'
+add deduction statement entities:
+  title: 'Create new Deduction Statement entities'
+
+administer organization invoice entities:
+  title: 'Administer Organization Invoice entities'
+  description: 'Allow to access the administration form to configure Organization Invoice entities.'
+  restrict access: true
+
+delete organization invoice entities:
+  title: 'Delete Organization Invoice entities'
+
+edit organization invoice entities:
+  title: 'Edit Organization Invoice entities'
+
+access organization invoice overview:
+  title: 'Access the Organization Invoice overview page'
+
+view published organization invoice entities:
+  title: 'View published Organization Invoice entities'
+
+view unpublished organization invoice entities:
+  title: 'View unpublished Organization Invoice entities'
+add deduction file entities:
+  title: 'Create new Deduction File entities'
+
+administer deduction file entities:
+  title: 'Administer Deduction File entities'
+  description: 'Allow to access the administration form to configure Deduction File entities.'
+  restrict access: true
+
+delete deduction file entities:
+  title: 'Delete Deduction File entities'
+
+edit deduction file entities:
+  title: 'Edit Deduction File entities'
+
+access deduction file overview:
+  title: 'Access the Deduction File overview page'
+
+view published deduction file entities:
+  title: 'View published Deduction File entities'
+
+view unpublished deduction file entities:
+  title: 'View unpublished Deduction File entities'
+add organization invoice line item entities:
+  title: 'Create new Organization invoice line item entities'
+
+administer organization invoice line item entities:
+  title: 'Administer Organization invoice line item entities'
+  description: 'Allow to access the administration form to configure Organization invoice line item entities.'
+  restrict access: true
+
+delete organization invoice line item entities:
+  title: 'Delete Organization invoice line item entities'
+
+edit organization invoice line item entities:
+  title: 'Edit Organization invoice line item entities'
+
+access organization invoice line item overview:
+  title: 'Access the Organization invoice line item overview page'
+
+view published organization invoice line item entities:
+  title: 'View published Organization invoice line item entities'
+
+view unpublished organization invoice line item entities:
+  title: 'View unpublished Organization invoice line item entities'
+add deduction file line item entities:
+  title: 'Create new Deduction file line item entities'
+
+administer deduction file line item entities:
+  title: 'Administer Deduction file line item entities'
+  description: 'Allow to access the administration form to configure Deduction file line item entities.'
+  restrict access: true
+
+delete deduction file line item entities:
+  title: 'Delete Deduction file line item entities'
+
+edit deduction file line item entities:
+  title: 'Edit Deduction file line item entities'
+
+access deduction file line item overview:
+  title: 'Access the Deduction file line item overview page'
+
+view published deduction file line item entities:
+  title: 'View published Deduction file line item entities'
+
+view unpublished deduction file line item entities:
+  title: 'View unpublished Deduction file line item entities'
+add commission statement line item entities:
+  title: 'Create new Commission statement line item entities'
+
+administer commission statement line item entities:
+  title: 'Administer Commission statement line item entities'
+  description: 'Allow to access the administration form to configure Commission statement line item entities.'
+  restrict access: true
+
+delete commission statement line item entities:
+  title: 'Delete Commission statement line item entities'
+
+edit commission statement line item entities:
+  title: 'Edit Commission statement line item entities'
+
+access commission statement line item overview:
+  title: 'Access the Commission statement line item overview page'
+
+view published commission statement line item entities:
+  title: 'View published Commission statement line item entities'
+
+view unpublished commission statement line item entities:
+  title: 'View unpublished Commission statement line item entities'

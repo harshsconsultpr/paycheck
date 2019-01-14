@@ -1,0 +1,5 @@
+entity.order_cancel.add_form:
+  route_name: entity.order_cancel.add_form
+  title: 'Add Order Cancel'
+  appears_on:
+    - entity.order_cancel.collection

@@ -1,0 +1,5 @@
+services:
+ pcx_searchapi_view_breadcrumbs.breadcrumb:
+   class: Drupal\pcx_searchapi_view_breadcrumbs\Breadcrumb\PCXSearchAPIViewBreadcrumbsBuilder
+   tags:
+    - { name: breadcrumb_builder, priority: 100 }

@@ -1,0 +1,14 @@
+
+# Deduction menu items definition
+entity.deduction.collection:
+  title: 'Deduction list'
+  route_name: entity.deduction.collection
+  description: 'List Deduction entities'
+  parent: system.admin_structure
+  weight: 100
+
+deduction.admin.structure.settings:
+  title: Deduction settings
+  description: 'Configure Deduction entities'
+  route_name: deduction.settings
+  parent: system.admin_structure

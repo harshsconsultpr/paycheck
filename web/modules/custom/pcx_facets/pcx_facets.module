@@ -1,0 +1,303 @@
+<?php
+
+/**
+ * @file
+ * Contains pcx_facets.module.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\commerce\BundleFieldDefinition;
+use Drupal\Core\Database\Database;
+
+/**
+ * Implements hook_help().
+ */
+function pcx_facets_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main module help for the pcx_facets module.
+    case 'help.page.pcx_facets':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Programatically create facets for imported products.') . '</p>';
+      return $output;
+
+    default:
+  }
+}
+
+function pcx_facets_cron() {
+
+  $last_run = \Drupal::state()->get('pcx_facets_cron.last_run', 0);
+
+  // If 6 hours passed since last time.
+  if ((\Drupal::time()->getRequestTime() - $last_run) > (3600 * 6)) {
+    // Update last run.
+    \Drupal::state()->set('pcx_facets_cron.last_run', \Drupal::time()->getRequestTime());
+
+    pcx_facets_process();
+  }
+  else {
+    pcx_facets_logger("Skipping pcx_facets. Last run: ".print_r($last_run,true));
+  }
+}
+
+function pcx_facets_process() {
+  // get all products
+  $products_query = \Drupal::entityQuery('commerce_product')
+    ->condition('status', 1);
+  $product_ids = $products_query->execute();
+
+  // look for existing search field
+  $search = \Drupal\search_api\Entity\Index::load('product_index');
+  $search_fields = $search->get('field_settings');
+
+  pcx_facets_logger("Existing search fields: ".print_r(array_keys($search_fields),true));
+
+  $i = 0;
+  foreach ($product_ids as $product_id) {
+    if (++$i > 500) {
+      break;
+    }
+    $product = \Drupal::entityTypeManager()->getStorage('commerce_product')->load($product_id);
+
+    // for each feature in product
+    foreach ($product->get('field_product_features')->getValue() as $product_feature) {
+      if (
+        is_array($product_feature)
+        && array_key_exists('value', $product_feature)
+        && strpos($product_feature['value'], ":\t") !== false
+      ) {
+        $sanitize_name = function($label) {
+          $name = str_replace(' ', '_', strtolower($label));
+          $name = str_replace('-', '', $name);
+          $name = preg_replace('/[^\w-|\r|\n|\-]/', '', $name);
+          $name = strlen($name) > 26 ? substr($name,0,26) : $name;
+          $name = ($name == "type") ? "types" : $name;
+          return $name;
+        };
+
+        $attribute_parts = explode(":\t", $product_feature['value']);
+        $attribute_label = $attribute_parts[0];
+        $attribute_name = $sanitize_name($attribute_label);
+        $attribute_value = preg_replace( "/\r|\n/", "", $attribute_parts[1] );
+
+        // echo("{$attribute_label} = {$attribute_value}\n");
+
+        if (in_array($attribute_value, [ 'Yes', 'No' ])) {
+          pcx_facets_logger("Processing {$attribute_label}");
+
+          // look for existing attribute
+          // $vocabularies = \Drupal\taxonomy\Entity\Vocabulary::loadMultiple();
+          // if (!isset($vocabularies[$attribute_name])) {
+          //   pcx_facets_logger("Creating vocabulary: ".print_r($attribute_name,true));
+          //   $vocabulary = \Drupal\taxonomy\Entity\Vocabulary::create(array(
+          //       'vid' => $attribute_name,
+          //       'description' => '',
+          //       'name' => "Product > {$attribute_label}",
+          //   ));
+          //   $vocabulary->save();
+          // } else {
+          //   pcx_facets_logger("Vocabulary exists: ".print_r($attribute_name,true));
+          // }
+
+          // check if default product entity has field
+          $field_config = \Drupal\field\Entity\FieldStorageConfig::loadByName('commerce_product', "field_{$attribute_name}");
+          if (empty($field_config)) {
+            try {
+              pcx_facets_logger("Adding field to product entity: ".print_r("field_{$attribute_name}",true));
+              $field_definition = BaseFieldDefinition::create('boolean')
+                ->setTargetEntityTypeId('commerce_product')
+                ->setTargetBundle('default')
+                ->setName("field_{$attribute_name}")
+                ->setLabel($attribute_label)
+                ->setDefaultValue(NULL);
+
+              $configurable_field_manager = \Drupal::service('commerce.configurable_field_manager');
+              $configurable_field_manager->createField($field_definition);
+            } catch (\Exception $e) {
+              pcx_facets_logger("Caught error when adding field to product entity: ".$e);
+            }
+
+          } else {
+            pcx_facets_logger("Field field_{$attribute_name} already exists");
+          }
+
+          // check if search index has field for vocabulary
+          if (!array_key_exists("field_{$attribute_name}", $search_fields)) {
+            // add field to search index
+            pcx_facets_logger("Adding field to search index: ".print_r("field_{$attribute_name}",true));
+            $search_fields["field_{$attribute_name}"] = [
+              'label' => $attribute_label,
+              'type' => 'boolean',
+              'datasource_id' => 'entity:commerce_product',
+              'property_path' => "field_{$attribute_name}",
+              'dependencies' => [
+                'config' => [
+                  'commerce_product'
+                ]
+              ]
+            ];
+
+            // save fields to search
+            $search->set('field_settings', $search_fields);
+            $search_save_result = $search->save();
+          }
+
+          // check if facet exists for search field
+          $facet_count = \Drupal::entityQuery('facets_facet')
+            ->condition('id', "facet_".$attribute_name)
+            ->count()->execute();
+          if ($facet_count == 0) {
+            pcx_facets_logger("Facet not found yet, creating: facet_".$attribute_name);
+            // add facet
+            try {
+              $facet = \Drupal\facets\Entity\Facet::create([
+                'id' => "facet_{$attribute_name}",
+                'name' => $attribute_label,
+              ]);
+              $facet->setWidget('checkbox');
+              $facet->setEmptyBehavior(['behavior' => 'none']);
+              $facet->setFacetSourceId('search_api:views_page__product_display_view__page_1');
+              $facet->setFieldIdentifier("field_{$attribute_name}");
+              $facet->setWeight(0);
+              $facet->setUrlAlias($attribute_name);
+              $facet->save();
+            } catch (\Exception $e) {
+              pcx_facets_logger("Caught error when creating facet: ".$e);
+            }
+          }
+
+          // add facet block to block layout
+          $facet_block_id = "{$attribute_name}_facet_block";
+          $facet_plugin_id = 'facet_block' . \Drupal\Component\Plugin\PluginBase::DERIVATIVE_SEPARATOR . "facet_{$attribute_name}";
+          $facet_block_count = \Drupal::entityQuery('block')
+            ->condition('id', $facet_block_id)
+            ->count()->execute();
+          if ($facet_block_count == 0) {
+            try {
+              pcx_facets_logger("Adding facet block to layout: $facet_block_id");
+              $facet_block = \Drupal\block\Entity\Block::create([
+                'id' => $facet_block_id,
+                'plugin' => $facet_plugin_id,
+                'region' => 'sidebar_first',
+                'settings' => [
+                  'label' => $attribute_label
+                ],
+                'theme' => 'paycheck_exchange',
+                'visibility' => [],
+                'weight' => 0,
+              ]);
+              $facet_block->save();
+
+              $visibility = $facet_block->getVisibility();
+              if (!isset($visibility['request_path'])) {
+                $visibility['request_path'] = [
+                  'pages' => '/catalog/products/*'
+                ];
+              }
+              $facet_block->setVisibilityConfig('request_path', $visibility['request_path']);
+              $facet_block->save();
+            } catch (\Exception $e) {
+              pcx_facets_logger("Caught error when adding facet block to layout: ".$e);
+            }
+          }
+
+          // get current values for attribute
+          // $taxonomy_query = \Drupal::entityQuery('taxonomy_term')
+          //     ->condition('vid', $attribute_name);
+          // $tids = $taxonomy_query->execute();
+          // $terms = \Drupal\taxonomy\Entity\Term::loadMultiple($tids);
+
+          if (isset($attribute_value) && ($attribute_value == "Yes" || $attribute_value == "No")) {
+            $value = ($attribute_value == "Yes");
+
+            // $value_exists = false;
+            // foreach ($terms as $term) {
+            //   if ($term->getName() == $attribute_value) {
+            //     $value_exists = true;
+            //     $value_id = $term->id();
+            //     break;
+            //   }
+            // }
+            //
+            // if ($value_exists) {
+            //   pcx_facets_logger("Value (".print_r($attribute_value,true).") already exists for vocabulary (".print_r($attribute_name,true).").");
+            //   // load value by id
+            //   $value = $value_id;
+            // }
+            // else {
+            //   if ($attribute_value) {
+            //     try {
+            //       pcx_facets_logger("Add value (".print_r($attribute_value,true).") to vocabulary (".print_r($attribute_name,true).").");
+            //       // if value doesnt exist, create it
+            //       $term_new = \Drupal\taxonomy\Entity\Term::create([
+            //         'name' => $attribute_value,
+            //         'vid' => $attribute_name,
+            //       ]);
+            //       $term_result = $term_new->save();
+            //       $value = $term_new->id();
+            //     } catch (\Exception $e) {
+            //       pcx_facets_logger("Caught error when adding value to vocabulary: ".$e);
+            //     }
+            //   }
+            //   else {
+            //     pcx_facets_logger("Value (".print_r($attribute_value,true).") evaluated as false.");
+            //   }
+            // }
+
+            // set vocabulary tid value on current product
+            if ($product->hasField("field_{$attribute_name}")) {
+              pcx_facets_logger("<pre>Saving attribute ({$attribute_name}) with value ({$attribute_value}) to product ({$product_id}).</pre>");
+              try {
+                $product->set("field_{$attribute_name}", $value);
+                $product->save();
+              } catch (\Exception $e) {
+                pcx_facets_logger("Caught error when saving attribute to product: ".$e);
+              }
+              // if (
+              //   $product->get("field_{$attribute_name}") !== null
+              //   $product->get("field_{$attribute_name}") !== null
+              // ) {
+              //   pcx_facets_logger("<pre>Saving attribute ({$attribute_name}) with value ({$attribute_value}) to product ({$product_id}).</pre>");
+              //   try {
+              //     $product->set("field_{$attribute_name}", $value);
+              //     $product->save();
+              //   } catch (\Exception $e) {
+              //     pcx_facets_logger("Caught error when saving attribute to product: ".$e);
+              //   }
+              // }
+              // else {
+              //   pcx_facets_logger("<pre>Field (field_{$attribute_name}) already has value ($attribute_value) for product ({$product_id}).</pre>");
+              // }
+            }
+            else {
+              pcx_facets_logger("<pre>Field (field_{$attribute_name}) does not exist for product ({$product_id}).</pre>");
+            }
+          }
+        }
+      }
+    }
+  }
+
+  $result = $search->set('field_settings', $search_fields);
+  $search->save();
+
+  // set config on all facet blocks
+  pcx_facets_logger("Complete: Configuring all facets via SQL.");
+  $facet_config = ';s:51:"search_api:views_page__product_display_view__page_1";s:6:"widget";a:2:{s:4:"type";s:8:"checkbox";s:6:"config";a:2:{s:12:"show_numbers";b:0;s:10:"soft_limit";i:0;}}s:14:"query_operator";s:2:"or";s:13:"use_hierarchy";b:0;s:16:"expand_hierarchy";b:0;s:38:"enable_parent_when_child_gets_disabled";b:1;s:10:"hard_limit";i:0;s:7:"exclude";b:0;s:41:"only_visible_when_facet_source_is_visible";b:0;s:17:"processor_configs";a:2:{s:16:"translate_entity";a:3:{s:12:"processor_id";s:16:"translate_entity";s:7:"weights";a:1:{s:5:"build";i:5;}s:8:"settings";a:0:{}}s:21:"url_processor_handler";a:3:{s:12:"processor_id";s:21:"url_processor_handler";s:7:"weights";a:2:{s:9:"pre_query";i:-10;s:5:"build";i:-10;}s:8:"settings";a:0:{}}}s:14:"empty_behavior";a:1:{s:8:"behavior";s:4:"none";}}';
+  $facet_config_query = 'UPDATE config SET `data` = CONCAT( TRIM(TRAILING SUBSTRING_INDEX(data, \'s:15:"facet_source_id"\', -1) FROM data), :facet_config) WHERE `name` LIKE \'facets.facet.facet_%\';';
+  $facet_update_result = Database::getConnection()->query( $facet_config_query, [
+    ':facet_config' => $facet_config
+  ], [
+    'allow_delimiter_in_query' => TRUE
+  ]);
+
+  pcx_facets_logger("Complete: Truncating cache_config via SQL.");
+  $truncate_cache_config_result = Database::getConnection()->query("TRUNCATE TABLE `cache_config`")->execute();
+}
+
+function pcx_facets_logger($notice="", $force=FALSE) {
+  if ( $force || \Drupal\Core\Site\Settings::get('client_debug')) {
+    \Drupal::logger('pcx_facets')->notice("<pre>".$notice."</pre>");
+  }
+}

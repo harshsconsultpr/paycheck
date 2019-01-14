@@ -1,0 +1,354 @@
+<?php
+
+define("BUYING_POWER_PERCENTAGE_OF_SALARY", .2);
+
+/**
+ * @file
+ * Contains pcx_checkout.module.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Database\Database;
+use Drupal\Core\Field\BaseFieldDefinition;
+
+/**
+ * Implements hook_help().
+ */
+function pcx_checkout_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main module help for the pcx_checkout module.
+    case 'help.page.pcx_checkout':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Custom checkout flow pane and other required entities/fields') . '</p>';
+      return $output;
+
+    default:
+  }
+}
+
+
+function pcx_checkout_get_order_totals($order_id) {
+  // get original and outstanding balance on order
+  return Database::getConnection()->query(
+    "SELECT
+        SUM(ROUND(total_price__number, 2)) as total,						             -- TOTAL (total original price of order)
+        GREATEST(SUM(ROUND(total_price__number - (ROUND(GREATEST(TIMESTAMPDIFF(DAY,
+          ADDDATE( LAST_DAY( FROM_UNIXTIME( FLOOR(placed) ) ), 1), 		       -- START (first day of month following placed date)
+          NOW()
+        ) / 365, 0)														                               -- ELAPSED (time elapsed since that day as percent of year)
+        * SUBSTRING_INDEX(
+          SUBSTRING_INDEX(
+            SUBSTRING_INDEX(
+              SUBSTRING_INDEX( co.data, 'frequency', -1 ), 			             -- FREQUENCY (paychecks issued annually by organization)
+            ';', 2 ),
+          '\"', -2),
+        '\"', 1)																                             -- ELAPSED * FREQUENCY = COUNT (number of deductions so far)
+        *
+        (total_price__number /
+        SUBSTRING_INDEX(
+          SUBSTRING_INDEX(
+            SUBSTRING_INDEX(
+              SUBSTRING_INDEX( co.data, 'deductions', -1 ), 			           -- DEDUCTIONS (amount of deductions chosen at checkout)
+            ';', 2 ),
+          '\"', -2), 														                             -- TOTAL / DEDUCTIONS = PAYMENT (amount paid per deduction)
+        '\"', 1)), 2)), 2)													                         -- COUNT * PAYMENT = PAID (amount paid off from total balance so far)
+        ), 0) as owed															                               -- TOTAL - PAID = OWED (amount still owed on order)
+      FROM commerce_order as co
+      WHERE order_id = :oid", [
+        ':oid' => $order_id
+      ], [
+        'allow_delimiter_in_query' => TRUE
+      ])
+      ->fetch();
+}
+
+function pcx_checkout_get_employee_totals($user_id) {
+  // get original and outstanding balance on all active orders
+  return Database::getConnection()->query(
+    "SELECT
+        SUM(ROUND(total_price__number, 2)) as total,						             -- TOTAL (total original price of order)
+        SUM(ROUND(total_price__number - (ROUND(GREATEST(TIMESTAMPDIFF(DAY,
+          ADDDATE( LAST_DAY( FROM_UNIXTIME( FLOOR(placed) ) ), 1), 		       -- START (first day of month following placed date)
+          NOW()
+        ) / 365, 0)															                             -- ELAPSED (time elapsed since that day as percent of year)
+        * SUBSTRING_INDEX(
+          SUBSTRING_INDEX(
+            SUBSTRING_INDEX(
+              SUBSTRING_INDEX( co.data, 'frequency', -1 ), 			             -- FREQUENCY (paychecks issued annually by organization)
+            ';', 2 ),
+          '\"', -2),
+        '\"', 1)																                             -- ELAPSED * FREQUENCY = COUNT (number of deductions so far)
+        *
+        (total_price__number /
+        SUBSTRING_INDEX(
+          SUBSTRING_INDEX(
+            SUBSTRING_INDEX(
+              SUBSTRING_INDEX( co.data, 'deductions', -1 ), 			           -- DEDUCTIONS (amount of deductions chosen at checkout)
+            ';', 2 ),
+          '\"', -2), 														                             -- TOTAL / DEDUCTIONS = PAYMENT (amount paid per deduction)
+        '\"', 1)), 2)), 2)													                         -- COUNT * PAYMENT = PAID (amount paid off from total balance so far)
+        ) as owed															                               -- TOTAL - PAID = OWED (amount still owed on order)
+      FROM commerce_order as co
+      WHERE state IN('pending', 'warehouse', 'processing', 'shipped', 'paying')		     -- STATES (whitelist of active states)
+        AND uid = :uid 															                         -- USER (current user id)
+      GROUP BY uid", [
+        ':uid' => $user_id
+      ], [
+        'allow_delimiter_in_query' => TRUE
+      ])
+      ->fetch();
+}
+
+function pcx_checkout_get_employee_total_owed($user_id) {
+  // get original and outstanding balance on all active orders
+  $employee_totals = pcx_checkout_get_employee_totals($user_id);
+  // return just owed balance
+  return $employee_totals->owed ?: 0;
+}
+
+function pcx_checkout_get_employee_annual_income($user_id) {
+  $user = \Drupal\user\Entity\User::load($user_id);
+  if ($user && in_array("employee", $user->getRoles())) {
+    if ($profile = \Drupal::entityManager()->getStorage('profile')->loadByUser($user, 'employee')) {
+      $annual_income_field = $profile->get('field_emp_annual_income')->getValue();
+      return $annual_income_field[0]['value'];
+
+    }
+  }
+}
+
+function pcx_checkout_get_employee_buying_power($user_id) {
+  // get employee income
+  $annual_income = pcx_checkout_get_employee_annual_income($user_id);
+  // get buying power factor from site settings
+  $buying_power_factor = \Drupal::config('pcx_checkout.settings')->get('field_buying_power_factor');
+  // calculate buying power
+  $buying_power = floatval($annual_income) * (floatval($buying_power_factor) / 100);
+
+  return $buying_power;
+}
+
+function pcx_checkout_get_overextended_message($limit, $owed) {
+  return str_replace(
+    [
+      "{{ buying_power }}",
+      "{{ balance }}",
+      "{{ available }}",
+    ],
+    [
+      "$".number_format($limit, 2, '.', ','),
+      "$".number_format($owed, 2, '.', ','),
+      "$".number_format(($limit - $owed), 2, '.', ','),
+    ],
+    \Drupal::config('pcx_checkout.settings')->get('field_buying_power_message')
+  );
+}
+
+function pcx_checkout_get_employee_available_buying_power($user_id) {
+  $limit = pcx_checkout_get_employee_buying_power($user_id);
+  $owed = pcx_checkout_get_employee_total_owed($user_id);
+  return $limit - $owed;
+}
+
+function pcx_checkout_form_views_form_commerce_cart_form_default_alter(&$form, &$form_state, $form_id) {
+  $limit = pcx_checkout_get_employee_buying_power(\Drupal::currentUser()->id());
+  $owed = pcx_checkout_get_employee_total_owed(\Drupal::currentUser()->id());
+
+  $order_id = $form['actions']['checkout']['#order_id'];
+  $cart = Database::getConnection()->query(
+    "SELECT SUM(ROUND(total_price__number, 2)) as total
+      FROM commerce_order as co
+      WHERE order_id = :oid", [
+        ':oid' => $order_id
+      ], [
+        'allow_delimiter_in_query' => TRUE
+      ])
+      ->fetch();
+
+  // echo("<pre>POWER: {$limit}\nOWED: {$owed}\nCART: {$cart->total}</pre>");
+
+  $error_message = pcx_checkout_get_overextended_message($limit, $owed);
+
+  if ( ($owed + $cart->total) > $limit ) {
+    // employee would be overextended, deny checkout and provide message
+    $form['actions']['checkout']['#disabled'] = TRUE;
+    drupal_set_message($error_message, 'error');
+  } else {
+    // employee has enough buying power, enable checkout
+    $errors = drupal_get_messages('error');
+    if (is_array($errors) && array_key_exists('error', $errors)) {
+      foreach ($errors['error'] as $error) {
+        if ($error != $error_message) {
+          drupal_set_message($error, 'error');
+        }
+      }
+    }
+    $form['actions']['checkout']['#disabled'] = FALSE;
+  }
+
+}
+
+function pcx_checkout_preprocess(&$variables, $hook) {
+  if (in_array($hook, ["views_view_fields__product_display_view", "commerce_product"])) {
+
+    $user = \Drupal\user\Entity\User::load(\Drupal::currentUser()->id());
+    if (in_array("employee", $user->getRoles())) {
+      if ($profile = \Drupal::entityManager()->getStorage('profile')->loadByUser($user, 'employee')) {
+        $reference_item = $profile->get('field_emp_organization_ref')->first();
+        $entity_reference = $reference_item->get('entity');
+        $entity_adapter = $entity_reference->getTarget();
+        $referenced_entity = $entity_adapter->getValue();
+
+        $payroll_frequency = $referenced_entity->field_org_payroll_frequency->getString();
+        if (is_numeric($payroll_frequency)) {
+          switch ($hook) {
+            case "views_view_fields__product_display_view":
+              $price = ($variables['fields']['variation_number']->raw)[0];
+              break;
+            case "commerce_product":
+              $price = floatval(preg_replace('/[^\d\.]/', '', $variables['product']['variation_price']['0']['#markup']));
+              break;
+          }
+
+          $variables['deduction'] = number_format(($price / $payroll_frequency), 2, '.', ',');
+        }
+      }
+    }
+
+  }
+}
+
+function pcx_checkout_form_alter(&$form, $form_state, $form_id) {
+  if ($form_id == 'system_site_information_settings') {
+    $config = \Drupal::service('config.factory')->getEditable('pcx_checkout.settings');
+
+    $form['buying_power'] = [
+      '#type' => 'details',
+      '#title' => 'Buying Power',
+      '#open' => true,
+      'field_buying_power_factor' => [
+        '#type' => 'number',
+        '#title' => t('Annual Salary Percentage'),
+        '#field_suffix' => "%",
+        '#min' => 0,
+        '#step' => .01,
+        '#default_value' => $config->get('field_buying_power_factor') ?: "12.5",
+        '#description' => "Percentage of the employee's annual salary which should be available for credit.",
+        '#size' => 20,
+      ],
+      'field_buying_power_message' => [
+        '#type' => 'textarea',
+        '#title' => t('Overextended Message'),
+        '#default_value' => $config->get('field_buying_power_message') ?: "Not enough buying power to checkout.",
+        '#description' => "Message to display on cart when Employee doesn't have enough buying power to checkout.\nYou can use the following replacement tokens:\n{{ buying_power }} {{ balance }} {{ available }}",
+        '#rows' => 2
+      ]
+    ];
+
+    $form['actions']['submit']['#submit'][] = 'pcx_checkout_basic_edit_submit';
+  }
+  elseif ($form_id == "commerce_checkout_flow_pcx_checkout_flow_plugin") {
+    $form['#attached']['library'][] = 'pcx_checkout/pcx_checkout_flow_shipping';
+    // dpm(($form['shipping_information']['shipping_profile']['#default_value']));
+  }
+}
+
+function pcx_checkout_basic_edit_submit($form, $form_state) {
+  $config = \Drupal::service('config.factory')->getEditable('pcx_checkout.settings');
+  $config->set('field_buying_power_factor', $form_state->getValue('field_buying_power_factor'))->save();
+  $config->set('field_buying_power_message', $form_state->getValue('field_buying_power_message'))->save();
+}
+
+/**
+ * Implements hook_entity_base_field_info().
+ */
+function pcx_checkout_entity_base_field_info(Drupal\Core\Entity\ContentEntityType $entity_type) {
+  if ($entity_type->id() === 'commerce_order') {
+    $fields = [];
+    $fields['balance'] = BaseFieldDefinition::create('balance')
+      ->setName('balance')
+      ->setLabel('Balance')
+      ->setComputed(TRUE)
+      ->setTranslatable(FALSE)
+      ->setClass('\Drupal\pcx_checkout\Plugin\Field\FieldItemList\PCXOrderBalanceList')
+      ->setDisplayConfigurable('view', TRUE)
+      ->setDisplayOptions('view', [
+        'label' => 'hidden',
+        'weight' => -5,
+      ]);
+    return $fields;
+  }
+  else if ($entity_type->id() === 'profile') {
+    $fields = [];
+    $fields['employee_balance'] = BaseFieldDefinition::create('employee_balance')
+      ->setName('employee_balance')
+      ->setLabel('Employee Balance')
+      ->setComputed(TRUE)
+      ->setTranslatable(FALSE)
+      ->setClass('\Drupal\pcx_checkout\Plugin\Field\FieldItemList\PCXEmployeeBalanceList')
+      ->setDisplayConfigurable('view', TRUE)
+      ->setDisplayOptions('view', [
+        'label' => 'hidden',
+        'weight' => -5,
+      ]);
+    $fields['employee_buying_power'] = BaseFieldDefinition::create('employee_buying_power')
+      ->setName('employee_buying_power')
+      ->setLabel('Employee Buying Power')
+      ->setComputed(TRUE)
+      ->setTranslatable(FALSE)
+      ->setClass('\Drupal\pcx_checkout\Plugin\Field\FieldItemList\PCXEmployeeBuyingPowerList')
+      ->setDisplayConfigurable('view', TRUE)
+      ->setDisplayOptions('view', [
+        'label' => 'hidden',
+        'weight' => -5,
+      ]);
+    $fields['employee_available_buying_power'] = BaseFieldDefinition::create('employee_available_buying_power')
+      ->setName('employee_available_buying_power')
+      ->setLabel('Employee Available Buying Power')
+      ->setComputed(TRUE)
+      ->setTranslatable(FALSE)
+      ->setClass('\Drupal\pcx_checkout\Plugin\Field\FieldItemList\PCXEmployeeAvailableBuyingPowerList')
+      ->setDisplayConfigurable('view', TRUE)
+      ->setDisplayOptions('view', [
+        'label' => 'hidden',
+        'weight' => -5,
+      ]);
+    return $fields;
+  }
+}
+
+/**
+ * Implements hook_views_data_alter().
+ */
+function pcx_checkout_views_data_alter(array &$data) {
+  if (isset($data['commerce_order'])) {
+    $data['commerce_order']['balance'] = [
+      'title' => t('Balance'),
+      'field' => [
+        'id' => 'pcx_checkout_view_balance',
+      ],
+    ];
+  }
+
+  if (isset($data['profile'])) {
+    $data['profile']['employee_balance'] = [
+      'title' => t('Employee Balance'),
+      'field' => [
+        'id' => 'pcx_checkout_view_employee_balance',
+      ],
+    ];
+    $data['profile']['employee_buying_power'] = [
+      'title' => t('Employee Buying Power'),
+      'field' => [
+        'id' => 'pcx_checkout_view_employee_buying_power',
+      ],
+    ];
+    $data['profile']['employee_available_buying_power'] = [
+      'title' => t('Employee Available Buying Power'),
+      'field' => [
+        'id' => 'pcx_checkout_view_employee_available_buying_power',
+      ],
+    ];
+  }
+}

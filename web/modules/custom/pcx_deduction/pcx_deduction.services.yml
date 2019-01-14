@@ -1,0 +1,7 @@
+# pcx_deduction.services.yml
+services:
+  pcx_deduction_event_subscriber:
+    class: '\Drupal\pcx_deduction\EventSubscriber\PCXDeductionEventSubscriber'
+    arguments: ['@language_manager', '@plugin.manager.mail']
+    tags:
+      - { name: 'event_subscriber' }

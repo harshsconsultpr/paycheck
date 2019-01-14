@@ -1,0 +1,22 @@
+# Order Export routing definition
+order_export.settings_tab:
+  route_name: order_export.settings
+  title: 'Settings'
+  base_route: order_export.settings
+
+entity.order_export.canonical:
+  route_name: entity.order_export.canonical
+  base_route: entity.order_export.canonical
+  title: 'View'
+
+entity.order_export.edit_form:
+  route_name: entity.order_export.edit_form
+  base_route: entity.order_export.canonical
+  title: 'Edit'
+
+entity.order_export.delete_form:
+  route_name:  entity.order_export.delete_form
+  base_route:  entity.order_export.canonical
+  title: Delete
+  weight: 10
+

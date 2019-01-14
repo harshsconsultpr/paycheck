@@ -1,0 +1,5 @@
+name: Paycheck Exchange Authenticated Front
+type: module
+description: Custom authenticated front path for Paycheck Exchange
+core: 8.x
+package: Custom

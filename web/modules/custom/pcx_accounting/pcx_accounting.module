@@ -1,0 +1,450 @@
+<?php
+
+/**
+ * @file
+ * Contains pcx_accounting.module.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+ * Implements hook_help().
+ */
+function pcx_accounting_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main module help for the pcx_accounting module.
+    case 'help.page.pcx_accounting':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Paycheck module to add export of deductions, commissions, and invoices.') . '</p>';
+      return $output;
+
+    default:
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function pcx_accounting_theme() {
+  return [
+    'pcx_accounting' => [
+      'render element' => 'children',
+    ],
+  ];
+}
+
+function pcx_accounting_cron() {
+  $last_run = \Drupal::state()->get('pcx_accounting_cron.last_run', 0);
+
+  // If 27 days passed since last time.
+  if ( date('d') == 25 && (\Drupal::time()->getRequestTime() - $last_run) > (3600 * 24 * 25)) {
+    // Update last run.
+    \Drupal::state()->set('pcx_accounting_cron.last_run', \Drupal::time()->getRequestTime());
+    pcx_accounting_month_close();
+  }
+  else {
+    \Drupal::logger('pcx_accounting')->notice("<pre>Skipping pcx_accounting. Last run: ".print_r($last_run,true)."</pre>");
+  }
+}
+
+function pcx_accounting_month_close() {
+  $organization_ids = \Drupal::EntityQuery('organization')->execute();
+  $organizations = \Drupal::entityTypeManager()->getStorage('organization')->loadMultiple($organization_ids);
+  foreach ($organizations as $organization) {
+    pcx_accounting_generate_organization_invoice($organization);
+    pcx_accounting_generate_deduction_file($organization);
+  }
+
+  pcx_accounting_generate_commission_statements();
+}
+
+function pcx_accounting_generate_organization_invoice($organization) {
+  $current_count = \Drupal::entityQuery('organization_invoice')
+      ->condition('month', date('m'))
+      ->condition('year', date('Y'))
+      ->condition('organization_id', $organization->id())
+      ->count()->execute();
+  if ($current_count <= 0) {
+    $data = pcx_accounting_collect_organization_orders($organization, 'paying');
+
+    if ($data['summary']['total'] > 0) {
+      $invoice = \Drupal\pcx_accounting\Entity\OrganizationInvoice::create([
+        'name' => date('Y-m')." ".$organization->get('name')->value,
+        'organization_id' => $organization->id(),
+        'amount' => $data['summary']['monthly'],
+        'paid' => 0,
+        'year' => date('Y'),
+        'month' => date('m'),
+        'status' => 0
+      ]);
+      $invoice->save();
+
+      foreach ($data['lines'] as $line) {
+        $invoice_line = \Drupal\pcx_accounting\Entity\OrganizationInvoiceLineItem::create([
+          'name' => date('Y-m')." #{$line['order_id']}",
+          'order_id' => $line['order_id'],
+          'amount' => $line['monthly'],
+          'status' => 1
+        ]);
+        $invoice_line->save();
+        $invoice->get('lines')->appendItem($invoice_line);
+      }
+      $invoice->save();
+
+      \Drupal::logger('pcx_accounting')->notice("<pre>ORG_INV: ".print_r($data,true)."</pre>");
+    }
+  }
+}
+
+function pcx_accounting_generate_deduction_file($organization) {
+  $current_count = \Drupal::entityQuery('deduction_file')
+      ->condition('month', date('m'))
+      ->condition('year', date('Y'))
+      ->condition('organization_id', $organization->id())
+      ->count()->execute();
+  if ($current_count <= 0) {
+    $deduction = \Drupal\pcx_accounting\Entity\DeductionFile::create([
+      'name' => date('Y-m')." ".$organization->get('name')->value,
+      'organization_id' => $organization->id(),
+      'year' => date('Y'),
+      'month' => date('m'),
+      'status' => 0
+    ]);
+    $deduction->save();
+
+    $employee_lines = [];
+
+    // get last month's deduction file
+    $last_dt = new DateTime('last month');
+    $last_file_ids = \Drupal::entityQuery('deduction_file')
+        ->condition('month', $last_dt->format('m'))
+        ->condition('year', $last_dt->format('Y'))
+        ->condition('organization_id', $organization->id())
+        ->range(0,1)->execute();
+
+    $last_files = \Drupal::entityManager()
+        ->getStorage('deduction_file')
+        ->loadMultiple($last_file_ids);
+
+    foreach ($last_files as $last_file) {
+      $last_line_ids = array_column($last_file->lines->getValue(), 'target_id');
+      $last_lines = \Drupal::entityManager()
+          ->getStorage('deduction_file_line_item')
+          ->loadMultiple($last_line_ids);
+
+      // start with totals from last month's deduction file
+      foreach ($last_lines as $last_line) {
+        $employee_lines[$last_line->get('employee_id')->target_id] = $last_line->get('amount')->value;
+      }
+    }
+    $last_lines = $employee_lines;
+
+    $employees = pcx_accounting_collect_organization_employees($organization);
+    foreach ($employees as $employee) {
+      // increment by new orders (or add employee)
+      foreach (pcx_accounting_collect_employee_orders($employee, 'shipped') as $line) {
+        if (!array_key_exists($employee->id(), $employee_lines)) {
+          $employee_lines[$employee->id()] = 0;
+        }
+        $employee_lines[$employee->id()] += $line['amount'];
+      }
+
+      // decrement by maturing orders
+      foreach (pcx_accounting_collect_employee_maturing_orders($employee) as $line) {
+        if (!array_key_exists($employee->id(), $employee_lines)) {
+          // this should never happen
+          $employee_lines[$employee->id()] = 0;
+        }
+        $employee_lines[$employee->id()] -= $line['amount'];
+      }
+
+      // loop through last month and remove lines that are the same
+      foreach ($last_lines as $last_employee => $last_amount) {
+        if (
+          array_key_exists($last_employee, $employee_lines)
+          && $employee_lines[$last_employee] == $last_amount
+        ) {
+          unset($employee_lines[$last_employee]);
+        }
+      }
+    }
+
+    $total = 0;
+    foreach ($employee_lines as $employee_id => $amount) {
+      $user = \Drupal::entityTypeManager()->getStorage('user')->load($employee_id);
+      $deduction_line = \Drupal\pcx_accounting\Entity\DeductionFileLineItem::create([
+        'name' => date('Y-m')." ".$user->get('name')->value,
+        'employee_id' => $employee_id,
+        'amount' => $amount,
+        'status' => 1
+      ]);
+      $deduction_line->save();
+
+      $deduction->get('lines')->appendItem($deduction_line);
+      $total += $amount;
+    }
+
+    $deduction->set('amount', $total);
+    $deduction->save();
+
+    pcx_accounting_update_order_statuses($organization);
+  }
+}
+
+function pcx_accounting_update_order_statuses($organization) {
+  foreach (pcx_accounting_collect_organization_employees($organization) as $employee) {
+    pcx_accounting_update_maturing_orders($employee);
+    pcx_accounting_update_shipped_orders($employee);
+  }
+}
+
+function pcx_accounting_update_maturing_orders($employee) {
+  foreach (pcx_accounting_collect_employee_maturing_orders($employee) as $line) {
+    $order = \Drupal\commerce_order\Entity\Order::load($line['order_id']);
+
+    $workflow = $order->getState()->getWorkflow();
+    $transitions = $workflow->getAllowedTransitions($order->getState()->value, $order);
+
+    if (array_key_exists('complete', $transitions)) {
+      $order->getState()->applyTransition($workflow->getTransition('complete'));
+      $order->save();
+    }
+  }
+}
+
+function pcx_accounting_update_shipped_orders($employee) {
+  foreach (pcx_accounting_collect_employee_orders($employee, 'shipped') as $line) {
+    $order = \Drupal\commerce_order\Entity\Order::load($line['order_id']);
+
+    $workflow = $order->getState()->getWorkflow();
+    $transitions = $workflow->getAllowedTransitions($order->getState()->value, $order);
+
+    if (array_key_exists('payroll', $transitions)) {
+      $order->getState()->applyTransition($workflow->getTransition('payroll'));
+      $order->save();
+    }
+  }
+}
+
+function pcx_accounting_collect_organization_employees($organization) {
+  $profile_ids = \Drupal::entityQuery('profile')
+      ->condition('type', 'employee')
+      ->condition('field_emp_organization_ref', $organization->id())
+      ->condition('field_emp_status', '48') // eligible status
+      ->execute();
+  $profiles = \Drupal::entityTypeManager()->getStorage('profile')->loadMultiple($profile_ids);
+
+  $employees = [];
+  foreach ($profiles as $profile) {
+    if ( $_user = \Drupal\user\Entity\User::load($profile->getOwnerId()) ) {
+      $employees[] = $_user;
+    }
+  }
+  return $employees;
+}
+
+function pcx_accounting_collect_organization_orders($organization, $status) {
+  $data = [
+    'summary' => [
+      'date' => date('Y-m-d'),
+      'count' => 0,
+      'total' => 0,
+      'monthly' => 0,
+    ],
+    'lines' => []
+  ];
+
+  $employees = pcx_accounting_collect_organization_employees($organization);
+  foreach ($employees as $employee) {
+    $employee_lines = pcx_accounting_collect_employee_orders($employee, $status);
+    foreach ($employee_lines as $employee_line) {
+      $data['lines'][] = $employee_line;
+      $data['summary']['total'] += $employee_line['amount'];
+      $data['summary']['monthly'] += $employee_line['monthly'];
+      $data['summary']['count'] += 1;
+    }
+  }
+  return $data;
+}
+
+function pcx_accounting_collect_employee_orders($employee, $status) {
+  $lines = [];
+  $order_ids = \Drupal::entityQuery('commerce_order')
+      ->condition('uid', $employee->id())
+      ->condition('state', $status)
+      ->execute();
+
+  $orders = \Drupal::entityTypeManager()->getStorage('commerce_order')->loadMultiple($order_ids);
+  foreach ($orders as $order) {
+    $deduction_count = $order->getData('deductions');
+
+    $total_order_price = $order->getTotalPrice();
+    $total_order_price = $total_order_price->getNumber();
+
+    $cost_per_deduction = $total_order_price / $deduction_count;
+
+    $payroll_frequency = $order->getData('frequency');
+    $deductions_per_month = $payroll_frequency / 12;
+
+    $cost_per_month = round( ($cost_per_deduction * $deductions_per_month), 2);
+
+    // get maturity date
+    $checkout_time = $order->getPlacedTime();
+    $initial_dt = new \DateTime();
+    $initial_dt->setTimestamp($checkout_time);
+    if ($initial_dt->format('d') >= 25) {
+      // after month close, move to next month
+      $initial_dt->modify('first day of next month');
+    }
+    $initial_dt->modify('first day of next month');
+
+    $total_months = ceil($deduction_count / $deductions_per_month);
+    $maturity_dt = new DateTime($initial_dt->format('Y-m-d'));
+    $maturity_dt->modify("+{$total_months} months");
+
+    $lines[] = [
+      'employee'  => $employee->get('name')->value,
+      'order_id'  => $order->id(),
+      'amount'    => $cost_per_deduction,
+      'monthly'   => $cost_per_month,
+      'total'     => $total_order_price,
+      'frequency' => $payroll_frequency,
+      'checkout'  => $checkout_time,
+      'paying'    => $initial_dt->format('Y-m-d'),
+      'maturity'  => $maturity_dt->format('Y-m-d')
+    ];
+  }
+  return $lines;
+}
+
+function pcx_accounting_collect_employee_maturing_orders($employee) {
+  $maturing = [];
+
+  $current = new DateTime('now');
+  $current->modify('first day of next month');
+
+  $lines = pcx_accounting_collect_employee_orders($employee, 'paying');
+  foreach ($lines as $line) {
+    $mature = new DateTime($line['maturity']);
+    if ($current >= $mature) {
+      $maturing[] = $line;
+    }
+  }
+
+  return $maturing;
+}
+
+function pcx_accounting_entity_delete(Drupal\Core\Entity\EntityInterface $entity) {
+  $type = false;
+  switch ($entity->getEntityTypeId()) {
+    case 'organization_invoice':
+      $type = 'organization_invoice_line_item';
+      break;
+    case 'deduction_file':
+      $type = 'deduction_file_line_item';
+      break;
+    case 'commission_statement':
+      $type = 'commission_statement_line_item';
+      break;
+  }
+  if ($type) {
+    $related_ids = array_column($entity->lines->getValue(), 'target_id');
+    $controller = \Drupal::entityManager()->getStorage($type);
+    $entities = $controller->loadMultiple($related_ids);
+    $controller->delete($entities);
+  }
+}
+
+function pcx_accounting_organization_invoice_update(Drupal\Core\Entity\EntityInterface $entity) {
+  $original = $entity->original;
+  if ($entity->get('paid')->value == 1 && $original->get('paid')->value == 0) {
+    $related_ids = array_column($entity->lines->getValue(), 'target_id');
+    $invoice_lines = \Drupal::entityManager()->getStorage('organization_invoice_line_item')->loadMultiple($related_ids);
+
+    foreach ($invoice_lines as $invoice_line) {
+      $order_id = $invoice_line->get('order_id')->getValue();
+      if (isset($order_id) && is_array($order_id) && isset($order_id[0]) && isset($order_id[0]['target_id'])) {
+        $commission_ids = \Drupal::entityQuery('commission')
+          ->condition('status', 0)
+          ->condition('order_id', $order_id[0]['target_id'])
+          ->execute();
+        $commissions = \Drupal::entityManager()->getStorage('commission')->loadMultiple($commission_ids);
+
+        $rates = [];
+        foreach ($commissions as $commission) {
+          $rate_id = $commission->get('rate_id')->getValue();
+          if (isset($rate_id) && is_array($rate_id) && isset($rate_id[0]) && isset($rate_id[0]['target_id'])) {
+            if (!in_array($rate_id, $rates)) {
+              $commission->set('status', 1);
+              $commission->save();
+              $rates[] = $rate_id;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+function pcx_accounting_generate_commission_statements() {
+  $user_ids = \Drupal::entityQuery('user')
+    ->condition('status', 1)
+    ->condition('roles', 'referral_partner')
+    ->execute();
+  $users = \Drupal\user\Entity\User::loadMultiple($user_ids);
+  foreach ($users as $user) {
+    pcx_accounting_generate_commission_statement($user);
+  }
+}
+
+function pcx_accounting_generate_commission_statement($user) {
+  $current_count = \Drupal::entityQuery('commission_statement')
+      ->condition('month', date('m'))
+      ->condition('year', date('Y'))
+      ->condition('referral_partner_id', $user->id())
+      ->count()->execute();
+  if ($current_count <= 0) {
+    $statement = \Drupal\pcx_accounting\Entity\CommissionStatement::create([
+      'name' => date('Y-m')." ".$user->getAccountName(),
+      'referral_partner_id' => $user->id(),
+      'year' => date('Y'),
+      'month' => date('m'),
+      'status' => 0
+    ]);
+    $statement->save();
+
+    $total = 0;
+
+    $commission_ids = \Drupal::entityQuery('commission')
+      ->condition('status', 1)
+      ->condition('rate_id.entity.field_referral_partner', $user->id())
+      ->execute();
+    $commissions = \Drupal::entityManager()->getStorage('commission')->loadMultiple($commission_ids);
+
+    \Drupal::logger('pcx_accounting')->notice("<pre>USER: {$user->id()}\nCOMMISSIONS:\n".print_r($commission_ids,true)."</pre>");
+
+    foreach ($commissions as $commission) {
+      $statement_line = \Drupal\pcx_accounting\Entity\CommissionStatementLineItem::create([
+        'name' => date('Y-m')." Order ID #".($commission->get('order_id')->getValue())[0]['target_id'],
+        'rate_id' => ($commission->get('rate_id')->getValue())[0]['target_id'],
+        'order_id' => ($commission->get('order_id')->getValue())[0]['target_id'],
+        'amount' => $commission->get('amount')->value,
+        'status' => 1
+      ]);
+      $statement_line->save();
+
+      $statement->get('lines')->appendItem($statement_line);
+      $total += $commission->get('amount')->value;
+    }
+
+    $statement->set('amount', $total);
+    $statement->save();
+
+    // mark all the effected commissions as status 2
+    foreach ($commissions as $commission) {
+      $commission->set('status', 2);
+      $commission->save();
+    }
+  }
+}

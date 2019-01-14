@@ -1,0 +1,22 @@
+# Order Cancel routing definition
+order_cancel.settings_tab:
+  route_name: order_cancel.settings
+  title: 'Settings'
+  base_route: order_cancel.settings
+
+entity.order_cancel.canonical:
+  route_name: entity.order_cancel.canonical
+  base_route: entity.order_cancel.canonical
+  title: 'View'
+
+entity.order_cancel.edit_form:
+  route_name: entity.order_cancel.edit_form
+  base_route: entity.order_cancel.canonical
+  title: 'Edit'
+
+entity.order_cancel.delete_form:
+  route_name:  entity.order_cancel.delete_form
+  base_route:  entity.order_cancel.canonical
+  title: Delete
+  weight: 10
+

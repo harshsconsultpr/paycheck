@@ -1,0 +1,14 @@
+
+# Order Export menu items definition
+entity.order_export.collection:
+  title: 'Order Export list'
+  route_name: entity.order_export.collection
+  description: 'List Order Export entities'
+  parent: system.admin_structure
+  weight: 100
+
+order_export.admin.structure.settings:
+  title: Order Export settings
+  description: 'Configure Order Export entities'
+  route_name: order_export.settings
+  parent: system.admin_structure

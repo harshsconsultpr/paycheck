@@ -1,0 +1,22 @@
+{#
+/**
+ * @file organization_invoice_line_item.html.twig
+ * Default theme implementation to present Organization invoice line item data.
+ *
+ * This template is used when viewing Organization invoice line item pages.
+ *
+ *
+ * Available variables:
+ * - content: A list of content items. Use 'content' to print all content, or
+ * - attributes: HTML attributes for the container element.
+ *
+ * @see template_preprocess_organization_invoice_line_item()
+ *
+ * @ingroup themeable
+ */
+#}
+<div{{ attributes.addClass('organization_invoice_line_item') }}>
+  {% if content %}
+    {{- content -}}
+  {% endif %}
+</div>

@@ -1,0 +1,7 @@
+pcx_misc.misc:
+  path: '/custom/path'
+  defaults:
+    _controller: '\Drupal\pcx_misc\Controller\MiscModule::MiscPath'
+  requirements:
+    _permission: 'access content'
+

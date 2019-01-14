@@ -1,0 +1,9 @@
+name: Paycheck Exchange Deduction
+type: module
+description: Adds deduction entity and state management logic.
+core: 8.x
+package: Custom
+dependencies:
+  - pcx_orders
+  - pcx_rates
+  - pcx_orgs

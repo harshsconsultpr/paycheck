@@ -1,0 +1,36 @@
+id: d7_commerce_order_item
+label: Commerce order item
+migration_tags:
+  - Drupal 7
+  - Commerce 1
+source:
+  plugin: d7_line_item
+process:
+  order_item_id: line_item_id
+  revision_id: revision_id
+  type: type
+  uid: uid
+  status: status
+  created: created
+  changed: changed
+  title: title
+  unit_price:
+    plugin: commerce_migrate_commerce_price
+    source: commerce_unit_price
+  total_price:
+    plugin: commerce_migrate_commerce_price
+    source: commerce_total
+  purchased_entity:
+    plugin: migration_lookup
+    migration: d7_commerce_product_variation
+    source: commerce_product
+destination:
+  plugin: 'entity:commerce_order_item'
+  destination_module: commerce_order
+migration_dependencies:
+  required:
+    - d7_commerce_default_store
+    - d7_commerce_product_variation
+    - d7_commerce_order_item_type
+#    - d7_field
+#    - d7_field_instance

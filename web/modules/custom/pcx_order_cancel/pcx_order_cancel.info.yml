@@ -1,0 +1,5 @@
+name: Paycheck Exchange Order Cancel
+type: module
+description: Order cancel logic.
+core: 8.x
+package: Custom

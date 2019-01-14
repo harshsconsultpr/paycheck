@@ -1,0 +1,47 @@
+diff --git a/README.txt b/README.txt
+index 1913533..98e140f 100644
+--- a/README.txt
++++ b/README.txt
+@@ -32,6 +32,11 @@ Before adding a facet, there should be a facet source. Facet sources can be:
+ After adding one of those, you can add a facet on the facets configuration page:
+ /admin/config/search/facets
+ 
++If you're using Search API views, make sure to disable views cache when using
++facets for that view.
++
+ FAQ
+ ---
+-Todo
++
++Q: Why do the facets disappear after a refresh.
++A: We don't support cached views, change the view to disable caching.
+diff --git a/src/Form/FacetForm.php b/src/Form/FacetForm.php
+index 61b50a1..d39683d 100644
+--- a/src/Form/FacetForm.php
++++ b/src/Form/FacetForm.php
+@@ -323,9 +323,8 @@ class FacetForm extends EntityForm {
+     $facet->save();
+ 
+     // Ensure that the caching of the view display is disabled, so the search
+-    // correctly returns the facets. This is a temporary fix, until the cache
+-    // metadata is correctly stored on the facet block. Only apply this when the
+-    // facet source type is actually something this is related to views.
++    // correctly returns the facets. Only apply this when the facet source is
++    // actually a view by exploding
+     list($type,) = explode(':', $facet_source_id);
+ 
+     if ($type === 'search_api_views') {
+@@ -334,10 +333,9 @@ class FacetForm extends EntityForm {
+ 
+     if (isset($view_id)) {
+       $view = Views::getView($view_id);
+-
+-      $display = &$view->storage->getDisplay($display);
+-      $display['display_options']['cache']['type'] = 'none';
+-      $view->storage->save();
++      $view->setDisplay($display);
++      $view->display_handler->overrideOption('cache', ['type' => 'none']);
++      $view->save();
+     }
+ 
+     if ($is_new) {

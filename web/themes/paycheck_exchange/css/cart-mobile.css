@@ -1,0 +1,74 @@
+@media only screen and (max-width: 768px) {
+  .cart .table-responsive {
+    border: none;
+  }
+  .cart table.table .table-striped > tbody > tr:nth-of-type(even),
+  .cart table.table .table-striped > tbody > tr {
+    background: #fbfbfb;
+  }
+  .cart table.table {
+    table-layout: fixed;
+    background: transparent;
+    margin-bottom: 0;
+    width: 100%;
+  }
+  .cart table.table thead {
+    display: none;
+  }
+  .cart table.table tbody tr {
+    background: #fff;
+    border: 1px solid #dfdfdf;
+    display: block;
+    padding: 15px 10px;
+    margin: 0 0 10px 0;
+  }
+  .cart table.table tbody td {
+    border: 0;
+    display: block;
+    padding: 10px 10px 20px 10px;
+    position: relative;
+  }
+  .cart table.table tbody td:not(.views-field-remove-button):after {
+    color: rgba(0, 0, 0, 0.35);
+    text-transform: uppercase;
+    font-size: 12px;
+    content: attr(data-title);
+    display: table-cell;
+    font-weight: 300;
+    height: 100%;
+    left: 10px;
+    margin: auto;
+    position: absolute;
+    white-space: nowrap;
+  }
+  .cart table.table thead th {
+    text-transform: uppercase;
+    font-size: .85em;
+    color: rgba(0, 0, 0, 0.35);
+    letter-spacing: .5pt;
+  }
+  .cart table.table tbody td.views-field-remove-button {
+    padding: 0;
+  }
+  .cart table.table tbody td.views-field-remove-button button.delete-order-item {
+    position: absolute;
+    bottom: -35px;
+    right: 0;
+    color: #666;
+    font-weight: 400;
+    font-size: 14px;
+  }
+
+  .cart table.table .field--name-product-id {
+    font-size: 20px;
+    color: #0f5f9c;
+    white-space: normal;
+  }
+  .cart table.table td {
+    font-size: 16px;
+    color: #666;
+  }
+  .cart table.table td.views-field.views-field-total-price__number {
+    color: #0f5f9c !important;
+  }
+}

@@ -1,0 +1,131 @@
+# Commission Statement routing definition
+commission_statement.settings_tab:
+  route_name: commission_statement.settings
+  title: 'Settings'
+  base_route: commission_statement.settings
+
+entity.commission_statement.canonical:
+  route_name: entity.commission_statement.canonical
+  base_route: entity.commission_statement.canonical
+  title: 'View'
+
+entity.commission_statement.edit_form:
+  route_name: entity.commission_statement.edit_form
+  base_route: entity.commission_statement.canonical
+  title: 'Edit'
+
+entity.commission_statement.delete_form:
+  route_name:  entity.commission_statement.delete_form
+  base_route:  entity.commission_statement.canonical
+  title: Delete
+  weight: 10
+
+# Organization Invoice routing definition
+organization_invoice.settings_tab:
+  route_name: organization_invoice.settings
+  title: 'Settings'
+  base_route: organization_invoice.settings
+
+entity.organization_invoice.canonical:
+  route_name: entity.organization_invoice.canonical
+  base_route: entity.organization_invoice.canonical
+  title: 'View'
+
+entity.organization_invoice.edit_form:
+  route_name: entity.organization_invoice.edit_form
+  base_route: entity.organization_invoice.canonical
+  title: 'Edit'
+
+entity.organization_invoice.delete_form:
+  route_name:  entity.organization_invoice.delete_form
+  base_route:  entity.organization_invoice.canonical
+  title: Delete
+  weight: 10
+# Deduction File routing definition
+deduction_file.settings_tab:
+  route_name: deduction_file.settings
+  title: 'Settings'
+  base_route: deduction_file.settings
+
+entity.deduction_file.canonical:
+  route_name: entity.deduction_file.canonical
+  base_route: entity.deduction_file.canonical
+  title: 'View'
+
+entity.deduction_file.edit_form:
+  route_name: entity.deduction_file.edit_form
+  base_route: entity.deduction_file.canonical
+  title: 'Edit'
+
+entity.deduction_file.delete_form:
+  route_name:  entity.deduction_file.delete_form
+  base_route:  entity.deduction_file.canonical
+  title: Delete
+  weight: 10
+
+# Organization invoice line item routing definition
+organization_invoice_line_item.settings_tab:
+  route_name: organization_invoice_line_item.settings
+  title: 'Settings'
+  base_route: organization_invoice_line_item.settings
+
+entity.organization_invoice_line_item.canonical:
+  route_name: entity.organization_invoice_line_item.canonical
+  base_route: entity.organization_invoice_line_item.canonical
+  title: 'View'
+
+entity.organization_invoice_line_item.edit_form:
+  route_name: entity.organization_invoice_line_item.edit_form
+  base_route: entity.organization_invoice_line_item.canonical
+  title: 'Edit'
+
+entity.organization_invoice_line_item.delete_form:
+  route_name:  entity.organization_invoice_line_item.delete_form
+  base_route:  entity.organization_invoice_line_item.canonical
+  title: Delete
+  weight: 10
+
+# Deduction file line item routing definition
+deduction_file_line_item.settings_tab:
+  route_name: deduction_file_line_item.settings
+  title: 'Settings'
+  base_route: deduction_file_line_item.settings
+
+entity.deduction_file_line_item.canonical:
+  route_name: entity.deduction_file_line_item.canonical
+  base_route: entity.deduction_file_line_item.canonical
+  title: 'View'
+
+entity.deduction_file_line_item.edit_form:
+  route_name: entity.deduction_file_line_item.edit_form
+  base_route: entity.deduction_file_line_item.canonical
+  title: 'Edit'
+
+entity.deduction_file_line_item.delete_form:
+  route_name:  entity.deduction_file_line_item.delete_form
+  base_route:  entity.deduction_file_line_item.canonical
+  title: Delete
+  weight: 10
+
+# Commission statement line item routing definition
+commission_statement_line_item.settings_tab:
+  route_name: commission_statement_line_item.settings
+  title: 'Settings'
+  base_route: commission_statement_line_item.settings
+
+entity.commission_statement_line_item.canonical:
+  route_name: entity.commission_statement_line_item.canonical
+  base_route: entity.commission_statement_line_item.canonical
+  title: 'View'
+
+entity.commission_statement_line_item.edit_form:
+  route_name: entity.commission_statement_line_item.edit_form
+  base_route: entity.commission_statement_line_item.canonical
+  title: 'Edit'
+
+entity.commission_statement_line_item.delete_form:
+  route_name:  entity.commission_statement_line_item.delete_form
+  base_route:  entity.commission_statement_line_item.canonical
+  title: Delete
+  weight: 10
+

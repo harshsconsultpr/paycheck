@@ -1,0 +1,14 @@
+id: d7_commerce_order_item_type
+label: Commerce order item type
+migration_tags:
+  - Drupal 7
+  - Commerce 1
+source:
+  plugin: d7_order_item_type
+process:
+  id: type
+  type: type
+  label: type
+destination:
+  plugin: entity:commerce_order_item_type
+  destination_module: commerce_order

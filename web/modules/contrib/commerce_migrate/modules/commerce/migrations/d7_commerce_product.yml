@@ -1,0 +1,29 @@
+id: d7_commerce_product
+label: Commerce product
+migration_tags:
+  - Drupal 7
+  - Commerce 1
+source:
+  plugin: d7_product_display
+process:
+  product_id: nid
+  title: title
+  type: type
+  uid: uid
+  body: body
+  status: status
+  created: created
+  changed: changed
+  path: path
+  variations:
+    plugin: migration_lookup
+    migration: d7_commerce_product_variation
+    source: variations_field
+destination:
+  plugin: 'entity:commerce_product'
+  destination_module: commerce_product
+migration_dependencies:
+  required:
+    - d7_commerce_default_store
+    - d7_commerce_product_variation
+    - d7_commerce_product_type

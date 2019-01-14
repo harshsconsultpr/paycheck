@@ -1,0 +1,22 @@
+add deduction entities:
+  title: 'Create new Deduction entities'
+
+administer deduction entities:
+  title: 'Administer Deduction entities'
+  description: 'Allow to access the administration form to configure Deduction entities.'
+  restrict access: true
+
+delete deduction entities:
+  title: 'Delete Deduction entities'
+
+edit deduction entities:
+  title: 'Edit Deduction entities'
+
+access deduction overview:
+  title: 'Access the Deduction overview page'
+
+view published deduction entities:
+  title: 'View published Deduction entities'
+
+view unpublished deduction entities:
+  title: 'View unpublished Deduction entities'

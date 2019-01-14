@@ -1,0 +1,5 @@
+name: Paycheck Exchange User Eligibility
+type: module
+description: Automatically Change Status of Employee per eligibility date
+core: 8.x
+package: Custom

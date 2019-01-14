@@ -1,0 +1,154 @@
+<?php
+
+/**
+ * @file
+ * Contains pcx_rates.module.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+
+
+
+/**
+ * Implements hook_help().
+ */
+function pcx_rates_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main module help for the pcx_rates module.
+    case 'help.page.pcx_rates':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Paycheck Exchange Commission Rates') . '</p>';
+      return $output;
+
+    default:
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function pcx_rates_theme() {
+  $theme = [];
+  $theme['commission_rate'] = [
+    'render element' => 'elements',
+    'file' => 'commission_rate.page.inc',
+    'template' => 'commission_rate',
+  ];
+  $theme['commission_rate_content_add_list'] = [
+    'render element' => 'content',
+    'variables' => ['content' => NULL],
+    'file' => 'commission_rate.page.inc',
+  ];
+  $theme['pcx_rates'] = [
+      'render element' => 'children',
+  ];
+
+  return $theme;
+}
+
+
+/**
+* Implements hook_theme_suggestions_HOOK().
+*/
+function pcx_rates_theme_suggestions_commission_rate(array $variables) {
+  $suggestions = [];
+  $entity = $variables['elements']['#commission_rate'];
+  $sanitized_view_mode = strtr($variables['elements']['#view_mode'], '.', '_');
+
+  $suggestions[] = 'commission_rate__' . $sanitized_view_mode;
+  $suggestions[] = 'commission_rate__' . $entity->bundle();
+  $suggestions[] = 'commission_rate__' . $entity->bundle() . '__' . $sanitized_view_mode;
+  $suggestions[] = 'commission_rate__' . $entity->id();
+  $suggestions[] = 'commission_rate__' . $entity->id() . '__' . $sanitized_view_mode;
+  return $suggestions;
+}
+
+
+function pcx_rates_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+
+    /*
+    if ($form_id == 'user_form') {
+        $current_path = \Drupal::service('path.current')->getPath();
+        $path_args = explode('/', $current_path);
+        $uid = $path_args[2];
+        $account = user_load($uid);
+        if ($account->hasRole('referral_partner')) {
+
+        }
+    }*/
+
+    if ($form_id == 'organization_organization_add_form') {
+        $form['revision_log_message']['#access'] = FALSE;
+    }
+
+    if ($form_id == 'commission_rate_commission_rate_add_form') {
+
+        $parameters = \Drupal::request()->query->all();
+
+        if (isset($parameters['org_id'])){
+            $entity = entity_load('organization', $parameters['org_id']);
+            $form['field_organization']['widget'][0]['target_id']['#default_value'] = $entity;
+            $form['field_organization']['widget'][0]['target_id']['#disabled'] = 'disabled';
+        }
+        if (isset($parameters['user_id'])){
+            $entity = user_load($parameters['user_id']);
+            $form['field_referral_partner']['widget'][0]['target_id']['#default_value'] = $entity;
+            $form['field_referral_partner']['widget'][0]['target_id']['#disabled'] = 'disabled';
+        }
+    }
+}
+
+/**
+ * Implements hook_user_insert().
+ */
+use Drupal\Core\Controller\ControllerBase;
+use \Drupal\Component\Utility\UrlHelper;
+
+function pcx_rates_user_insert($account){
+
+    if ($account->hasRole('referral_partner')){
+        $query = \Drupal::request()->query->all();
+
+        $params = UrlHelper::buildQuery($query, $parent = '');
+        if ($params){
+            $params = '?' . $params;
+        }
+
+        $uid = $account->id();
+        $url = '/user/' . $uid . '/referral_partner' . $params;
+
+        $response = new Symfony\Component\HttpFoundation\RedirectResponse($url);
+        $response->send(); // don't send the response yourself inside controller and form.
+        return;
+    }
+
+    if ($account->hasRole('employee')){
+        $uid = $account->id();
+        $url = '/user/' . $uid . '/employee';
+        $response = new Symfony\Component\HttpFoundation\RedirectResponse($url);
+        $response->send(); // don't send the response yourself inside controller and form.
+        return;
+    }
+}
+
+
+
+function pcx_rates_commission_rate_presave(Drupal\Core\Entity\EntityInterface $entity) {
+  if ($entity->getEntityTypeId() == 'commission_rate') {
+    $org = $entity->get('field_organization')->getValue();
+    if (isset($org) && is_array($org) && isset($org[0]) && isset($org[0]['target_id'])) {
+      $rate_count = \Drupal::entityQuery('commission_rate')
+          ->condition('field_organization', $org[0]['target_id'])
+          ->count()->execute();
+
+      if ($rate_count >= 5) {
+        // cancel save with message
+        $response = new \Symfony\Component\HttpFoundation\RedirectResponse(\Drupal::request()->getRequestUri());
+        $response->send();
+        drupal_set_message(t('Organization has already reached the maximum of 5 commission rates.'), 'error', TRUE);
+        exit;
+      }
+    }
+  }
+}

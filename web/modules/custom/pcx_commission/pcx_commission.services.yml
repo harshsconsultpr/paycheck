@@ -1,0 +1,7 @@
+# pcx_commission.services.yml
+services:
+  pcx_commission_event_subscriber:
+    class: '\Drupal\pcx_commission\EventSubscriber\PCXCommissionEventSubscriber'
+    arguments: ['@language_manager', '@plugin.manager.mail']
+    tags:
+      - { name: 'event_subscriber' }

@@ -1,0 +1,38 @@
+pcx_commission_workflow:
+  id: pcx_commission_workflow
+  group: commission
+  label: 'PCX Commissions'
+  states:
+    pending:
+      label: 'Pending'
+    processing:
+      label: 'Processing'
+    paying:
+      label: 'Paying'
+    completed:
+      label: 'Completed'
+    canceled:
+      label: 'Canceled'
+    collections:
+      label: 'Collections'
+  transitions:
+    process:
+      label: 'Process commission'
+      from: [pending]
+      to: processing
+    begin:
+      label: 'Begin paying commission'
+      from: [processing]
+      to: paying
+    cancel:
+      label: 'Cancel commission'
+      from: [pending, processing, paying]
+      to:   canceled
+    collect:
+      label: 'Collections'
+      from: [paying]
+      to:   collections
+    complete:
+      label: 'Complete commission'
+      from: [paying, collections]
+      to:   completed

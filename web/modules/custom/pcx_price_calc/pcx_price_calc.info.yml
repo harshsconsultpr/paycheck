@@ -1,0 +1,7 @@
+name: Paycheck Exchange Custom Price Calculations
+type: module
+description: Custom module to handle custom price calculations
+core: 8.x
+package: Custom
+dependencies:
+  - commerce_price

@@ -1,0 +1,22 @@
+# Commission routing definition
+commission.settings_tab:
+  route_name: commission.settings
+  title: 'Settings'
+  base_route: commission.settings
+
+entity.commission.canonical:
+  route_name: entity.commission.canonical
+  base_route: entity.commission.canonical
+  title: 'View'
+
+entity.commission.edit_form:
+  route_name: entity.commission.edit_form
+  base_route: entity.commission.canonical
+  title: 'Edit'
+
+entity.commission.delete_form:
+  route_name:  entity.commission.delete_form
+  base_route:  entity.commission.canonical
+  title: Delete
+  weight: 10
+

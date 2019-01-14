@@ -1,0 +1,48 @@
+<?php
+
+use Drupal\user\Entity\User;
+
+/*
+ * On cron run (once per day) check for users with expiry values
+ * and block (disable) their account if the current time/date is
+ * past their expiry setting.
+ */
+
+function pcx_user_eligibility_cron() {
+  pcx_user_eligibility_process();
+
+  // $last_run = \Drupal::state()->get('pcx_user_eligibility.last_run', 0);
+  //
+  // // If 24 hours passed since last time.
+  // if ((\Drupal::time()->getRequestTime() - $last_run) > (3600 * 24)) {
+  //   // Update last run.
+  //   \Drupal::state()->set('pcx_user_eligibility.last_run', \Drupal::time()->getRequestTime());
+  //
+  //   pcx_user_eligibility_process();
+  // }
+  // else {
+  //   \Drupal::logger('pcx_user_eligibility')->notice("Skipping pcx_user_eligibility. Last run: ".print_r($last_run,true));
+  // }
+}
+
+function pcx_user_eligibility_process() {
+  $query = \Drupal::entityQuery('profile')
+      ->condition('type', 'employee')
+      ->condition('field_emp_status', 50);
+
+  $result = $query->execute();
+
+  foreach ($result as $profile_id) {
+    $profile = \Drupal::entityTypeManager()->getStorage('profile')->load($profile_id);
+
+    // get employee hire date
+    $hire_date = $profile->get('field_emp_date_of_hire')->getString();
+
+    $oneYearOn = date('Y-m-d',strtotime('+1 year', strtotime($hire_date)));
+    // if employee has been on for year then change their status to eligible
+    if (date('Y-m-d') >= $oneYearOn){
+      $profile->set('field_emp_status', 47);
+      $profile->save();
+    }
+  }
+}

@@ -1,0 +1,5 @@
+name: Paycheck Exchange Accounting
+type: module
+description: Paycheck module to add export of deductions, commissions, and invoices.
+core: 8.x
+package: Custom

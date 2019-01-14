@@ -1,0 +1,22 @@
+id: d7_commerce_product_type
+label: Commerce product type
+migration_tags:
+  - Drupal 7
+  - Commerce 1
+source:
+  plugin: d7_product_display_type
+  variations:
+      matching: true
+      default: default
+process:
+  id: type
+  label: name
+  description: description
+  help: help
+  variationType: variation_type
+  injectVariationFields:
+    plugin: default_value
+    default_value: 1
+destination:
+  plugin: 'entity:commerce_product_type'
+  destination_module: commerce_product

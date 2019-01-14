@@ -1,0 +1,14 @@
+
+# Order Cancel menu items definition
+entity.order_cancel.collection:
+  title: 'Order Cancel list'
+  route_name: entity.order_cancel.collection
+  description: 'List Order Cancel entities'
+  parent: system.admin_structure
+  weight: 100
+
+order_cancel.admin.structure.settings:
+  title: Order Cancel settings
+  description: 'Configure Order Cancel entities'
+  route_name: order_cancel.settings
+  parent: system.admin_structure

@@ -1,0 +1,22 @@
+{#
+/**
+ * @file commission_rate.html.twig
+ * Default theme implementation to present Commission rate data.
+ *
+ * This template is used when viewing Commission rate pages.
+ *
+ *
+ * Available variables:
+ * - content: A list of content items. Use 'content' to print all content, or
+ * - attributes: HTML attributes for the container element.
+ *
+ * @see template_preprocess_commission_rate()
+ *
+ * @ingroup themeable
+ */
+#}
+<div{{ attributes.addClass('commission_rate') }}>
+  {% if content %}
+    {{- content -}}
+  {% endif %}
+</div>

@@ -1,0 +1,77 @@
+<?php
+
+/**
+ * @file
+ * Contains pcx_orders.module.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Database\Database;
+use Drupal\Core\Field\BaseFieldDefinition;
+
+/**
+ * Implements hook_help().
+ */
+function pcx_orders_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main module help for the pcx_orders module.
+    case 'help.page.pcx_orders':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Provides workflow, order type, and status subscription logic for Paycheck orders.') . '</p>';
+      return $output;
+
+    default:
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function pcx_orders_theme() {
+  return [
+    'pcx_orders' => [
+      'render element' => 'children',
+    ],
+  ];
+}
+
+function pcx_orders_profile_presave(Drupal\Core\Entity\EntityInterface $entity) {
+  if ($entity->getEntityTypeId() == 'profile' && $entity->get('type')->getString() == 'employee') {
+    $status = $entity
+      ->get('field_emp_status')
+      ->first()
+      ->get('entity')
+      ->getTarget()
+      ->getValue()
+    ;
+    if ($status->get('name')->value == "Former") {
+      $user = $entity
+        ->get('uid')
+        ->first()
+        ->get('entity')
+        ->getTarget()
+        ->getValue()
+      ;
+      \Drupal::logger('pcx_orders')->notice("Employee status is 'former', switching orders to collections: #{$entity->id()}");
+      $order_ids = Database::getConnection()->query(
+        "SELECT order_id FROM commerce_order as co
+          WHERE state IN('pending', 'warehouse', 'processing', 'paying')
+            AND uid = :uid", [
+            ':uid' => $user->id()
+          ])
+          ->fetchAll(PDO::FETCH_COLUMN, 0);
+          
+      $orders = \Drupal::entityTypeManager()->getStorage('commerce_order')->loadMultiple(array_values($order_ids));
+      foreach ($orders as $order) {
+        $workflow = $order->getState()->getWorkflow();
+        $transitions = $workflow->getAllowedTransitions($order->getState()->value, $order);
+        if (array_key_exists('collect', $transitions)) {
+          \Drupal::logger('pcx_orders')->notice("Transitioning order to collect: #{$order->id()}");
+          $order->getState()->applyTransition($workflow->getTransition('collect'));
+          $order->save();
+        }
+      }
+    }
+  }
+}

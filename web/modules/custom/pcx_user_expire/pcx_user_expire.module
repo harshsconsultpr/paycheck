@@ -1,0 +1,45 @@
+<?php
+
+use Drupal\user\Entity\User;
+
+/*
+ * On cron run (once per day) check for users with expiry values
+ * and block (disable) their account if the current time/date is
+ * past their expiry setting.
+ */
+function pcx_user_expire_cron() {
+    $last_run = \Drupal::state()->get('pcx_user_expire.last_run', 0);
+
+    // If 24 hours passed since last time.
+    if ((\Drupal::time()->getRequestTime() - $last_run) > (3600 * 24)) {
+      // Update last run.
+      \Drupal::state()->set('pcx_user_expire.last_run', \Drupal::time()->getRequestTime());
+
+      pcx_user_expire_process();
+    }
+    else {
+      \Drupal::logger('pcx_user_expire')->notice("Skipping pcx_user_expire. Last run: ".print_r($last_run,true));
+    }
+}
+
+function pcx_user_expire_process() {
+  $ids = \Drupal::entityQuery('user')
+      ->condition('status', 1)
+      ->condition('field_user_expiry_days', 0, '>')
+      ->execute();
+
+  $users = User::loadMultiple($ids);
+
+  foreach ($users as $user) {
+      // Get expiry days value from user account
+      $expiry_days = $user->field_user_expiry_days->getString();
+      $created = $user->created->getString();
+
+      if (time() > ( $created + ($expiry_days * (3600 * 24)) ) ){
+          // User is expired - let's disable their account and reset their expiry value
+          $user->set('field_user_expiry_days', 0);
+          $user->block();
+          $user->save();
+      }
+  }
+}

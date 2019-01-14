@@ -1,0 +1,11 @@
+entity.commission_rate.add_form:
+  route_name: entity.commission_rate.add_page
+  title: 'Add Commission rate'
+  appears_on:
+    - entity.commission_rate.collection
+entity.commission_rate_type.add_form:
+  route_name: entity.commission_rate_type.add_form
+  title: 'Add Commission rate type'
+  appears_on:
+    - entity.commission_rate_type.collection
+

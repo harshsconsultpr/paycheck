@@ -1,0 +1,217 @@
+<?php
+
+/**
+ * @file
+ * Contains pcx_importers.module.
+ */
+ use Drupal\Core\Database\Database;
+
+/**
+ * Implements hook_migration_plugins_alter().
+ */
+function pcx_importers_migration_plugins_alter(&$definitions) {
+  $config = \Drupal::service('config.factory')->getEditable('pcx_importers.settings');
+
+  $products_path = implode('/', [
+    \Drupal::service('file_system')->realpath(file_default_scheme() . "://"),
+    $config->get('integration_path'),
+    $config->get('products_integration_file')
+  ]);
+
+  $categories_path = implode('/', [
+    \Drupal::service('file_system')->realpath(file_default_scheme() . "://"),
+    $config->get('integration_path'),
+    $config->get('categories_integration_file')
+  ]);
+
+  $definitions['pcx_products']['source']['path'] = $products_path;
+  $definitions['pcx_catalog']['source']['path'] = $categories_path;
+}
+
+function pcx_importers_cron() {
+
+  $last_run = \Drupal::state()->get('pcx_importers_cron.last_run', 0);
+
+  // If 3 hours minutes passed since last time.
+  if (in_array(date('G'), [5,8,11,14,17,20,23,1]) && (\Drupal::time()->getRequestTime() - $last_run) > (3600 * 3)) {
+    // Update last run.
+    \Drupal::state()->set('pcx_importers_cron.last_run', \Drupal::time()->getRequestTime());
+
+    pcx_importers_price_stock_update();
+  }
+  else {
+    \Drupal::logger('pcx_importers.cron')->notice("<pre>Skipping pcx_import. Last run: ".print_r($last_run,true)."</pre>");
+  }
+}
+
+function pcx_importers_price_stock_update() {
+  $start = time();
+
+  $config = \Drupal::service('config.factory')->getEditable('pcx_importers.settings');
+  $products_path = implode('/', [
+    \Drupal::service('file_system')->realpath(file_default_scheme() . "://"),
+    $config->get('integration_path'),
+    $config->get('products_integration_file')
+  ]);
+
+  // get all products with stock, shipping, and msrp
+  $current = [];
+  $temp = Database::getConnection()->query(
+    "SELECT
+    	product.product_id as id,
+    	vsn.field_abt_product_vsn_value as sku,
+    	product.status as in_stock,
+    	variation.status as variation_in_stock,
+    	ROUND(shipping.field_product_shipping_price_value, 2) as shipping_price,
+    	ROUND(msrp.field_product_msrp_number, 2) as msrp,
+    	taxonomy.field_catalog_id_value as category,
+    	ROUND(variation.price__number, 2) as price
+    FROM
+    	commerce_product_field_data product
+    LEFT JOIN
+    	commerce_product__field_abt_product_vsn vsn
+    		ON vsn.entity_id = product.product_id
+    LEFT JOIN
+    	commerce_product__field_product_msrp msrp
+    		ON msrp.entity_id = product.product_id
+    LEFT JOIN
+    	commerce_product__field_product_shipping_price shipping
+    		ON shipping.entity_id = product.product_id
+    LEFT JOIN
+    	commerce_product__field_product_category category
+    		ON category.entity_id = product.product_id
+    LEFT JOIN
+    	taxonomy_term__field_catalog_id taxonomy
+    		ON taxonomy.entity_id = category.field_product_category_target_id
+    LEFT JOIN
+    	commerce_product_variation_field_data variation
+    		ON variation.product_id = product.product_id
+    WHERE
+    	msrp.field_product_msrp_number IS NOT NULL
+    ;"
+  )->fetchAll(\PDO::FETCH_ASSOC);
+  // \Drupal::logger('pcx_importers.cron')->notice("<pre>CURRENT:\n".print_r($current,true)."</pre>");
+  foreach ($temp as $p) {
+    $current[$p['sku']] = [
+      'product_id' => $p['id'],
+      'in_stock' => $p['in_stock'],
+      'variation_in_stock' => $p['variation_in_stock'],
+      'shipping_price' => $p['shipping_price'],
+      'msrp' => $p['msrp'],
+      'category' => $p['category'],
+      'price' => $p['price']
+    ];
+  }
+
+  // get all categories with markup
+  $markup_by_name = Database::getConnection()->query(
+    "SELECT
+    	/* category.entity_id as tid, */
+    	category.field_catalog_id_value as name,
+    	markup.field_category_markup_override_value as value
+    FROM
+    	taxonomy_term__field_catalog_id category
+    LEFT JOIN
+    	taxonomy_term__field_category_markup_override as markup
+    		ON markup.entity_id = category.entity_id
+    ;"
+  )->fetchAll(PDO::FETCH_KEY_PAIR);
+  // \Drupal::logger('pcx_importers.cron')->notice("<pre>MARKUP_BY_NAME:\n".print_r($markup_by_name,true)."</pre>");
+
+  // get global markup
+  $global_markup = Database::getConnection()->query("SELECT `data` FROM config WHERE `name` = 'pcx_price_calc.settings';")->fetch();
+  if (isset($global_markup->data)) {
+    $global_markup = unserialize($global_markup->data);
+    $global_markup = $global_markup['global_markup'];
+  } else {
+    $global_markup = 0;
+  }
+  // \Drupal::logger('pcx_importers.cron')->notice("<pre>GLOBAL_MARKUP: ".print_r($global_markup,true)."</pre>");
+
+  // get all products from csv
+  $new = [];
+  $i = 0;
+  if (($handle = fopen($products_path, "r")) !== FALSE) {
+    while (($row = fgetcsv($handle)) !== FALSE) {
+      if ($i > 0) {
+        $categories = explode('|', $row[8]);
+        $last_category = array_values(array_slice($categories, -1))[0];
+
+        // get markup for category
+        $markup = $global_markup;
+        if (is_array($markup_by_name) && isset($markup_by_name[$last_category])) {
+          $markup = $markup_by_name[$last_category];
+        }
+
+        $msrp = (float) $row[7];
+        $ship = (float) $row[4];
+        if (is_numeric($msrp) && is_numeric($ship)) {
+          $markup = $msrp * ($markup / 100);
+          $price = $msrp + $markup;
+          $price += $ship;
+          $price = round($price,2);
+
+          $new[$row[2]] = [
+            'in_stock' => ($row[3] == 'Y'),
+            'shipping_price' => $ship,
+            'msrp' => $msrp,
+            'category' => $last_category,
+            'price' => $price
+          ];
+        }
+        else {
+          \Drupal::logger('pcx_importers.cron')->notice("<pre>NOT NUMERIC PRICE: ".print_r($price,true)."</pre>");
+        }
+      }
+      $i++;
+    }
+    fclose($handle);
+  }
+  // \Drupal::logger('pcx_importers.cron')->notice("<pre>NEW:\n".print_r($new,true)."</pre>");
+
+  $diff = [];
+  foreach ($new as $sku => $p) {
+    if (isset($current[$sku])) {
+      if (
+        $current[$sku]['in_stock'] != ($new[$sku]['in_stock'] ? "1" : "0")
+        || $current[$sku]['variation_in_stock'] != ($new[$sku]['in_stock'] ? "1" : "0")
+        || round($current[$sku]['price'], 2) != round($new[$sku]['price'], 2)
+      ) {
+        $diff[$current[$sku]['product_id']] = $p;
+        $diff[$current[$sku]['product_id']]['sku'] = $sku;
+      }
+    }
+  }
+
+  // \Drupal::logger('pcx_importers.cron')->notice("<pre>NEW: ".count($new)."\nCURRENT: ".count($current)."\nCHANGES: ".count($diff)."</pre>");
+  // \Drupal::logger('pcx_importers.cron')->notice("<pre>NEW: ".print_r($new,true)."\nCURRENT: ".print_r($current,true)."\nCHANGES: ".print_r($diff,true)."</pre>");
+
+  \Drupal::logger('pcx_importers.cron')->notice("<pre>Loading ".count($diff)." altered product entities</pre>");
+
+  // $search = \Drupal\search_api\Entity\Index::load('catalog');
+
+  $products = \Drupal::entityTypeManager()->getStorage('commerce_product')->loadMultiple( array_keys($diff) );
+  foreach ($products as $product) {
+    $_product = $diff[$product->id()];
+    \Drupal::logger('pcx_importers.cron')->notice("<pre>{$_product['sku']}: updating product</pre>");
+    if ( $variation = \Drupal::entityManager()->getStorage('commerce_product_variation')->loadByProperties(array('sku' => $_product['sku'])) ) {
+      $price = new \Drupal\commerce_price\Price((string)$_product['price'], 'USD');
+
+      $variation = reset($variation);
+      $variation->setPrice($price);
+      $variation->setActive($_product['in_stock']);
+
+      // \Drupal::logger('pcx_importers.cron')->notice("<pre>{$_product['sku']}: saving variation with Status: ".($_product['in_stock'] ? 'true' : 'false')." and Price: "."$".number_format($_product['price'], 2, '.', ',')."</pre>");
+      $variation->save();
+
+      // \Drupal::logger('pcx_importers.cron')->notice("<pre>{$_product['sku']}: saving product with Status: ".($_product['in_stock'] ? 'true' : 'false')." and Price: "."$".number_format($_product['price'], 2, '.', ',')."</pre>");
+      $product->set('status', $_product['in_stock']);
+      $product->save();
+    }
+    else {
+      \Drupal::logger('pcx_importers.cron')->notice("<pre>{$_product['sku']}: variation does not exist</pre>");
+    }
+  }
+
+  \Drupal::logger('pcx_importers.cron')->notice("<pre>pcx_importers_update_product DURATION: ".(round(((time()-$start)/60), 2))."</pre>");
+}

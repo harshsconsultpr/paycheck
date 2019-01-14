@@ -1,0 +1,5 @@
+name: Paycheck Exchange Categories
+type: module
+description: Filters for category taxonomy view.
+core: 8.x
+package: Custom

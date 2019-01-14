@@ -1,0 +1,14 @@
+pcx_checkout_flow:
+    version: 1.x
+    js:
+      js/deduction-checkout-pane.js: {}
+    dependencies:
+      - core/jquery
+
+
+pcx_checkout_flow_shipping:
+    version: 1.x
+    js:
+      js/shipping-checkout-pane.js: {}
+    dependencies:
+      - core/jquery

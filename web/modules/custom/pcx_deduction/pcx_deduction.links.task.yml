@@ -1,0 +1,22 @@
+# Deduction routing definition
+deduction.settings_tab:
+  route_name: deduction.settings
+  title: 'Settings'
+  base_route: deduction.settings
+
+entity.deduction.canonical:
+  route_name: entity.deduction.canonical
+  base_route: entity.deduction.canonical
+  title: 'View'
+
+entity.deduction.edit_form:
+  route_name: entity.deduction.edit_form
+  base_route: entity.deduction.canonical
+  title: 'Edit'
+
+entity.deduction.delete_form:
+  route_name:  entity.deduction.delete_form
+  base_route:  entity.deduction.canonical
+  title: Delete
+  weight: 10
+

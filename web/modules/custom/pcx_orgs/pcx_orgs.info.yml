@@ -1,0 +1,5 @@
+name: Paycheck Exchange Organizations
+type: module
+description: Paycheck Exchange Organization Entity
+core: 8.x
+package: Custom

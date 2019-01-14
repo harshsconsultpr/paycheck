@@ -1,0 +1,7 @@
+name: Paycheck Exchange Checkout
+type: module
+description: Custom checkout flow pane and other required entities/fields
+core: 8.x
+package: Custom
+dependencies:
+  - commerce_payment

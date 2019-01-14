@@ -1,0 +1,41 @@
+# Ubercart 6 Line Items Migration
+id: d6_ubercart_order_product
+label: Migrate order line items from Ubercart
+migration_tags:
+  - Drupal 6
+  - Ubercart
+source:
+  plugin: d6_ubercart_order_product
+process:
+  type:
+    plugin: default_value
+    default_value: default
+  order_item_id: order_product_id
+  # Pulls in order ids from order migration
+  order_id:
+    plugin: migration
+    migration: d6_ubercart_order
+    source: order_id
+  # Pulls in product ids from product migration
+  purchased_entity:
+    plugin: migration
+    migration: d6_ubercart_product_variation
+    source: nid
+  title: title
+  quantity: qty
+  'unit_price/number': price
+  'unit_price/currency_code': currency
+  'total_price/number': total_price
+  'total_price/currency_code': currency
+  # Source field name 'data' changed to 'attributes' in prepareRow function
+  data: attributes
+  created: created
+  changed: modified
+destination:
+  plugin: entity:commerce_order_item
+  destination_module: commerce_order
+migration_dependencies:
+  required:
+    - d6_ubercart_order
+    - d6_ubercart_product
+    - d6_ubercart_product_variation

@@ -1,0 +1,15 @@
+diff --git a/src/Plugin/search_api/backend/SearchApiSolrBackend.php b/src/Plugin/search_api/backend/SearchApiSolrBackend.php
+index d41e0de..42f5346 100644
+--- a/src/Plugin/search_api/backend/SearchApiSolrBackend.php
++++ b/src/Plugin/search_api/backend/SearchApiSolrBackend.php
+@@ -970,7 +970,9 @@ class SearchApiSolrBackend extends BackendPluginBase implements SolrBackendInter
+    */
+   protected function connect() {
+     if (!$this->solr) {
+-      $this->solr = new Client();
++      // Pass in an empty endpoint array to prevent Solarium from initializing
++      // the default endpoint.
++      $this->solr = new Client(['endpoint' => []]);
+       $this->solr->createEndpoint($this->configuration + array('key' => $this->server->id()), TRUE);
+       $this->getSolrHelper()->setSolr($this->solr);
+     }

@@ -1,0 +1,43 @@
+<?php
+namespace Drupal\pcx_price_calc\Resolvers;
+
+use Drupal\commerce\Context;
+use Drupal\commerce\PurchasableEntityInterface;
+use Drupal\commerce_price\Resolver\PriceResolverInterface;
+use Drupal\commerce_price\Price;
+use Drupal\taxonomy\Entity\Term;
+/**
+ * Returns a price with calculated markup.
+ */
+class CustomPriceResolver implements PriceResolverInterface {
+    /**
+     * {@inheritdoc}
+     */
+    public function resolve(PurchasableEntityInterface $entity, $quantity, Context $context) {
+
+
+        // Does this product have a custom category markup?
+        // Get variation's product
+        $product_id = $entity->get('product_id')->getString();
+        $product = \Drupal\commerce_product\Entity\Product::load($product_id);
+
+        if ($term = \Drupal\taxonomy\Entity\Term::load($product->get('field_product_category')->target_id)) {
+          $markup_override = $term->get('field_category_markup_override')->getString();
+        }
+
+        if (isset($markup_override) && is_numeric($markup_override)){
+            //Override price by category
+            $markup = $markup_override;
+        }else{
+            $markup = (\Drupal::config('pcx_price_calc.settings')->get('global_markup'));
+        }
+
+        $price = $entity->getPrice()->getNumber();
+        $markup = $price * $markup / 100;
+        $price = $price + $markup;
+        $price = round($price,2);
+        $new_price = new Price(strval($price), 'USD');
+
+        return $new_price;
+    }
+}

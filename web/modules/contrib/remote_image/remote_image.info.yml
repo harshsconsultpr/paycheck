@@ -1,0 +1,13 @@
+name: Remote Image
+type: module
+description: Allows the use of remote images with some meta data.
+# core: 8.x
+package: Field types
+dependencies:
+  - field
+
+# Information added by Drupal.org packaging script on 2016-01-21
+version: '8.x-1.0-beta1'
+core: '8.x'
+project: 'remote_image'
+datestamp: 1453369143

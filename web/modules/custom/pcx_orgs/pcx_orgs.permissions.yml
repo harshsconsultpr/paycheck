@@ -1,0 +1,33 @@
+add organization entities:
+  title: 'Create new Organization entities'
+
+administer organization entities:
+  title: 'Administer Organization entities'
+  description: 'Allow to access the administration form to configure Organization entities.'
+  restrict access: true
+
+delete organization entities:
+  title: 'Delete Organization entities'
+
+edit organization entities:
+  title: 'Edit Organization entities'
+
+access organization overview:
+  title: 'Access the Organization overview page'
+
+view published organization entities:
+  title: 'View published Organization entities'
+
+view unpublished organization entities:
+  title: 'View unpublished Organization entities'
+
+view all organization revisions:
+  title: 'View all Organization revisions'
+
+revert all organization revisions:
+  title: 'Revert all Organization revisions'
+  description: 'Role requires permission <em>view Organization revisions</em> and <em>edit rights</em> for organization entities in question or <em>administer organization entities</em>.'
+
+delete all organization revisions:
+  title: 'Delete all revisions'
+  description: 'Role requires permission to <em>view Organization revisions</em> and <em>delete rights</em> for organization entities in question or <em>administer organization entities</em>.'

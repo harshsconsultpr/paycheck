@@ -1,0 +1,22 @@
+add commission entities:
+  title: 'Create new Commission entities'
+
+administer commission entities:
+  title: 'Administer Commission entities'
+  description: 'Allow to access the administration form to configure Commission entities.'
+  restrict access: true
+
+delete commission entities:
+  title: 'Delete Commission entities'
+
+edit commission entities:
+  title: 'Edit Commission entities'
+
+access commission overview:
+  title: 'Access the Commission overview page'
+
+view published commission entities:
+  title: 'View published Commission entities'
+
+view unpublished commission entities:
+  title: 'View unpublished Commission entities'

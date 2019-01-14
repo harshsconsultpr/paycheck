@@ -1,0 +1,36 @@
+id: d7_commerce_product_variation
+label: Commerce product variation
+migration_tags:
+  - Drupal 7
+  - Commerce 1
+source:
+  plugin: d7_product
+process:
+  variation_id: product_id
+  # The product_id field is NULL after this migration.
+  # It is back reference to the product id which is
+  # migrated in the product migration, d7_product, and
+  # is run after this migration. The value is updated
+  # via the event subscriber MigrateProduct.
+  #product_id:
+  revision_id: revision_id
+  sku: sku
+  title: title
+  type: type
+  language: language
+  uid: uid
+  status: status
+  created: created
+  changed: changed
+  data: data
+  price:
+    plugin: commerce_migrate_commerce_price
+    source: commerce_price
+destination:
+  plugin: 'entity:commerce_product_variation'
+  destination_module: commerce_product
+migration_dependencies:
+  required:
+    - d7_commerce_product_variation_type
+#    - d7_field
+#    - d7_field_instance

@@ -1,0 +1,57 @@
+core: 8.x
+type: theme
+base theme: bootstrap
+
+name: 'Paycheck Exchange'
+description: 'Uses the Bootstrap framework Sass source files and must be compiled (not for beginners).'
+package: 'Bootstrap'
+
+regions:
+  sitewide_notice: 'Sitewide Notice' 
+  navigation: 'Navigation'
+  navigation_collapsible: 'Navigation (Collapsible)'
+  navigation_mobile: 'Navigation (Mobile)'
+  header: 'Top Bar'
+  highlighted: 'Highlighted'
+  help: 'Help'
+  commerce: 'Commerce Bar'
+  hero: 'Hero'
+  sidebar_first: 'Left Sidebar'
+  content: 'Content'
+  grid_one: 'Grid Content'
+  sidebar_second: 'Right Sidebar'
+
+  front_left: 'Front Page left'
+  front_right: 'Front Page right'
+
+  first_top: 'First row - top'
+  first_left: 'First row - left'
+  first_middle: 'First row - middle'
+  first_right: 'First row - right'
+  first_bottom: 'First row - bottom'
+
+  second_top: 'Second row - top'
+  second_left: 'Second row - left'
+  second_middle: 'Second row - middle'
+  second_right: 'Second row - right'
+  second_bottom: 'Second row - bottom'
+
+  third_top: 'Third row - top'
+  third_left: 'Third row - left'
+  third_middle: 'Third row - middle'
+  third_right: 'Third row - right'
+  third_bottom: 'Third row - bottom'
+
+  fourth_top: 'Fourth row - top'
+  fourth_left: 'Fourth row - left'
+  fourth_middle: 'Fourth row - middle'
+  fourth_right: 'Fourth row - right'
+  fourth_bottom: 'Fourth row - bottom'
+
+  footer: 'Footer'
+  page_top: 'Page top'
+  page_bottom: 'Page bottom'
+
+libraries:
+  - 'paycheck_exchange/global-styling'
+  - 'paycheck_exchange/bootstrap-scripts'

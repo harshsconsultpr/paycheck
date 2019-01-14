@@ -1,0 +1,28 @@
+id: d7_commerce_payment_transaction
+label: Commerce payment transactions
+migration_tags:
+  - Drupal 7
+  - Commerce 1
+source:
+  plugin: d7_payment_transaction
+process:
+  transaction_id: transaction_id
+  revision_id: revision_id
+  uid: uid
+  order_id: order_id
+  payment_method: payment_method
+  instance_id: instance_id
+  remote_id: remote_id
+  message: message
+  message_variables: message_variables
+  amount: amount
+  currency_code: currency_code
+  status: status
+  remote_status: remote_status
+  payload: payload
+  created: created
+  changed: changed
+  data: data
+destination:
+  plugin: entity:commerce_payment_transaction
+  destination_module: commerce_payment

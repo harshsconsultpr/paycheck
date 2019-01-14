@@ -1,0 +1,105 @@
+id: employee_profile
+langcode: en
+status: true
+dependencies:
+    enforced:
+        module:
+            - pcx_user_import
+label: 'Employee Profile Migration'
+source:
+    plugin: csv
+    track_changes: true
+    path: assets/csv/employees.csv
+#    path: /app/web/sites/default/files/integrations/import/user/employees.csv
+    header_row_count: 1
+    keys:
+        - email
+    column_names:
+      0:
+        email: 'Email'
+      1:
+        first_name: 'First Name'
+      2:
+        last_name: 'Last Name'
+      3:
+        organization: 'Organization'
+      4:
+        title: 'Title'
+      5:
+        phone: 'Phone'
+      6:
+        address1: 'Address 1'
+      7:
+        address2: 'Address 2'
+      8:
+        city: 'City'
+      9:
+        state: 'State'
+      10:
+        zip: 'Zip'
+      11:
+        hire_date: 'Hire Date'
+      12:
+        phone_alt: 'Phone Alt.'
+      13:
+        email_alt: 'Email Alt.'
+      14:
+        annual_income: 'Annual Income'
+      15:
+        ssn: 'Social Security Number'
+      16:
+        employee_id: 'Employee ID'
+      17:
+        gender: 'Gender'
+      18:
+        marital_status: 'Marital Status'
+      19:
+        birth_date: 'Birth Date'
+destination:
+    plugin: entity:profile
+process:
+    type:
+      plugin: default_value
+      default_value: 'employee'
+    uid:
+      plugin: migration_lookup
+      no_stub: true
+      migration: employee_user
+      source: email
+    field_emp_alt_email: email_alt
+    field_emp_alt_phone: phone_alt
+    field_emp_annual_income: annual_income
+    field_emp_date_of_birth:
+      plugin: format_date
+      from_format: 'n/j/Y'
+      to_format: 'Y-m-d'
+      source: birth_date
+    field_emp_date_of_hire:
+      plugin: format_date
+      from_format: 'n/j/Y'
+      to_format: 'Y-m-d'
+      source: hire_date
+    field_emp_status: emp_status
+    field_emp_title: title
+    field_emp_employee_uid: employee_id
+    field_emp_gender: gender
+    field_emp_marital_status: marital_status
+    field_emp_organization_ref:
+      source: organization
+      plugin: entity_lookup
+      value_key: name
+      entity_type: organization
+      ignore_case: true
+    field_emp_phone: phone
+    field_emp_ssn_last_4: ssn
+    field_emp_home_address/country_code:
+      plugin: default_value
+      default_value: US
+    field_emp_home_address/langcode:
+      plugin: default_value
+      default_value: en
+    field_emp_home_address/address_line1: address1
+    field_emp_home_address/address_line2: address2
+    field_emp_home_address/locality: city
+    field_emp_home_address/administrative_area: state
+    field_emp_home_address/postal_code: zip

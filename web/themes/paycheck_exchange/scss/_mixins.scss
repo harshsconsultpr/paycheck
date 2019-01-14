@@ -1,0 +1,183 @@
+// Example of how to use these rad responsive variables
+
+//@include size(xs) { /* Words */ }
+//@include size(sm) { /* Words */ }
+//@include size(md) { /* Words */ }
+//@include size(lg) { /* Words */ }
+//@include size(xlu) { /* Words */ }
+
+// Size Variables
+// Extra small screen / phone
+// Note: Deprecated $screen-xs and $screen-phone as of v3.0.1
+$screen-xs:                  480px !default;
+$screen-xs-min:              $screen-xs;
+$screen-phone:               $screen-xs-min;
+
+// Small screen / tablet
+// Note: Deprecated $screen-sm and $screen-tablet as of v3.0.1
+$screen-sm:                  768px !default;
+$screen-sm-min:              $screen-sm;
+$screen-tablet:              $screen-sm-min;
+
+// Medium screen / desktop
+// Note: Deprecated $screen-md and $screen-desktop as of v3.0.1
+$screen-md:                  992px !default;
+$screen-md-min:              $screen-md;
+$screen-desktop:             $screen-md-min;
+
+// Large screen / wide desktop
+// Note: Deprecated $screen-lg and $screen-lg-desktop as of v3.0.1
+$screen-lg:                  1200px !default;
+$screen-lg-min:              $screen-lg;
+$screen-lg-desktop:          $screen-lg-min;
+
+$screen-xl:                  1600px;
+$screen-xl-min:              $screen-lg;
+$screen-xl-desktop:          $screen-lg-min;
+
+// So media queries don't overlap when required, provide a maximum
+$screen-xxs-max:             ($screen-xs-min - 1);
+$screen-xs-max:              ($screen-sm-min - 1);
+$screen-sm-max:              ($screen-md-min - 1);
+$screen-md-max:              ($screen-lg-min - 1);
+
+@mixin size($media) {
+  // These variables are for styles needed ONLY within these widths
+  @if $media == xs {
+    @media only screen and (max-width: $screen-xxs-max) { @content; }
+  }
+  @else if $media == sm {
+    @media only screen and (min-width: $screen-xs) and (max-width: $screen-xs-max) { @content; }
+  }
+  @else if $media == md {
+    @media only screen and (min-width: $screen-sm) and (max-width: $screen-sm-max) { @content; }
+  }
+  @else if $media == lg {
+    @media only screen and (min-width: $screen-md) and (max-width: $screen-md-max) { @content; }
+  }
+
+    // These variables are for styles needed in their min-widths and everything above it
+  @else if $media == smu {
+    @media only screen and (min-width: $screen-xs) { @content; }
+  }
+  @else if $media == mdu {
+    @media only screen and (min-width: $screen-sm) { @content; }
+  }
+  @else if $media == lgu {
+    @media only screen and (min-width: $screen-md) { @content; }
+  }
+  @else if $media == xlu {
+    @media only screen and (min-width: $screen-lg) { @content; }
+  }
+  
+  @else if $media == xxlu {
+    @media only screen and (min-width: $screen-xl) { @content; }
+  }
+    // Special media query for only for mobile break point
+  @else if $media == mb {
+    @media only screen and (max-width: $screen-xs-max) { @content; }
+  }
+  
+  // Special media query for only for up to the lg breakpoint
+  @else if $media == mb-lg {
+    @media only screen and (max-width: $screen-sm-max) { @content; }
+  }
+
+}
+@mixin clearfix {
+	&:before, &:after {
+		content: " ";
+		display: table;
+	}
+	&:after {
+		clear: both;
+	}
+}
+
+.mobonly {
+  @include size(lgu) {
+    display: none;
+  }
+}
+
+.deskonly {
+  @include size(mb-lg) {
+    display: none;
+  }
+}
+
+
+.mtop-5 { margin-top: 5px; }
+.mtop-10 { margin-top: 10px; }
+.mtop-15 { margin-top: 15px; }
+.mtop-20 { margin-top: 20px; }
+.mtop-30 { margin-top: 30px; }
+.mtop-40 { margin-top: 40px; }
+.mtop-50 { margin-top: 50px; }
+.mtop-5neg { margin-top: -5px; }
+.mtop-10neg { margin-top: -10px; }
+.mtop-15neg { margin-top: -15px; }
+.mtop-20neg { margin-top: -20px; }
+
+.mbot-5 { margin-bottom: 5px; }
+.mbot-10 { margin-bottom: 10px; }
+.mbot-15 { margin-bottom: 15px; }
+.mbot-20 { margin-bottom: 20px; }
+.mbot-5neg { margin-bottom: -5px; }
+.mbot-10neg { margin-bottom: -10px; }
+.mbot-15neg { margin-bottom: -15px; }
+.mbot-20neg { margin-bottom: -20px; }
+
+.mleft-5 { margin-left: 5px; }
+.mleft-10 { margin-left: 10px; }
+.mleft-15 { margin-left: 15px; }
+.mleft-20 { margin-left: 20px; }
+.mleft-5neg { margin-left: -5px; }
+.mleft-10neg { margin-left: -10px; }
+.mleft-15neg { margin-left: -15px; }
+.mleft-20neg { margin-left: -20px; }
+
+.mright-5 { margin-right: 5px; }
+.mright-10 { margin-right: 10px; }
+.mright-15 { margin-right: 15px; }
+.mright-20 { margin-right: 20px; }
+.mright-5neg { margin-right: -5px; }
+.mright-10neg { margin-right: -10px; }
+.mright-15neg { margin-right: -15px; }
+.mright-20neg { margin-right: -20px; }
+
+.img-mtop-5 img { margin-top: 5px; }
+.img-mtop-10 img { margin-top: 10px; }
+.img-mtop-15 img { margin-top: 15px; }
+.img-mtop-20 img { margin-top: 20px; }
+.img-mtop-5neg img { margin-top: -5px; }
+.img-mtop-10neg img { margin-top: -10px; }
+.img-mtop-15neg img { margin-top: -15px; }
+.img-mtop-20neg img { margin-top: -20px; }
+
+.img-mbot-5 img { margin-bottom: 5px; }
+.img-mbot-10 img { margin-bottom: 10px; }
+.img-mbot-15 img { margin-bottom: 15px; }
+.img-mbot-20 img { margin-bottom: 20px; }
+.img-mbot-5neg img { margin-bottom: -5px; }
+.img-mbot-10neg img { margin-bottom: -10px; }
+.img-mbot-15neg img { margin-bottom: -15px; }
+.img-mbot-20neg img { margin-bottom: -20px; }
+
+.img-mleft-5 img { margin-left: 5px; }
+.img-mleft-10 img { margin-left: 10px; }
+.img-mleft-15 img { margin-left: 15px; }
+.img-mleft-20 img { margin-left: 20px; }
+.img-mleft-5neg img { margin-left: -5px; }
+.img-mleft-10neg img { margin-left: -10px; }
+.img-mleft-15neg img { margin-left: -15px; }
+.img-mleft-20neg img { margin-left: -20px; }
+
+.img-mright-5 img { margin-right: 5px; }
+.img-mright-10 img { margin-right: 10px; }
+.img-mright-15 img { margin-right: 15px; }
+.img-mright-20 img { margin-right: 20px; }
+.img-mright-5neg img { margin-right: -5px; }
+.img-mright-10neg img { margin-right: -10px; }
+.img-mright-15neg img { margin-right: -15px; }
+.img-mright-20neg img { margin-right: -20px; }

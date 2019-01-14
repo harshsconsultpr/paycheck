@@ -1,0 +1,153 @@
+<?php
+
+/*
+ * Move our custom form_alter hooks to the end of the hooks so they
+ * are called last.
+ */
+function pcx_custom_module_implements_alter(&$implementations, $hook) {
+    if ($hook == 'form_alter' || $hook == 'field_widget_form_alter' || $hook == 'options_list_alter') {
+        // Move my_module_form_alter() to the end of the list.
+        // \Drupal::moduleHandler()->getImplementations()
+        // iterates through $implementations with a foreach loop which PHP iterates
+        // in the order that the items were added, so to move an item to the end of
+        // the array, we remove it and then add it.
+        $group = $implementations['pcx_custom'];
+        unset($implementations['pcx_custom']);
+        $implementations['pcx_custom'] = $group;
+    }
+}
+
+use Drupal\Core\Form\FormStateInterface;
+/**
+ * Implements hook_field_widget_form_alter().
+ */
+function pcx_custom_field_widget_form_alter(&$element, FormStateInterface $form_state, $context) {
+
+    $items = $context['items'];
+    $field_definition = $items->getFieldDefinition();
+
+    if ($field_definition->getTargetEntityTypeId() == 'user' && $field_definition->getName() == 'role_change' && isset($element['#options'])) {
+      $parameters = \Drupal::request()->query->all();
+      if (isset($parameters['role']) && $parameters['role'] == 'referral_partner') {
+        $element['#default_value'] = array('referral_partner', 'authenticated');
+        $element['#disabled'] = array('referral_partner', 'authenticated');
+      }
+    }
+}
+
+/*
+ * Override the Role Delegation module hook to add our custom role filter
+ */
+function pcx_custom_options_list_alter(array &$options, array $context) {
+
+    $field_definition = $context['fieldDefinition'];
+
+    if ($field_definition->getTargetEntityTypeId() == 'user' && $field_definition->getName() == 'role_change') {
+
+        $parameters = \Drupal::request()->query->all();
+        if (isset($parameters['role']) && $parameters['role'] == 'referral_partner') {
+            $options = array('referral_partner' => 'Referral Partner', 'authenticated' => 'Authenticated user');
+        }
+    }
+}
+
+
+function pcx_custom_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id){
+
+    if ($form_id == 'user_register_form') {
+
+        $parameters = \Drupal::request()->query->all();
+      //\Drupal::logger('my_module')->notice('<pre>' . $parameters . '</pre>');
+        if (isset($parameters['role']) && $parameters['role'] == 'referral_partner') {
+            $form['account']['roles']['referral_partner'] = array('#default_value' => 'referral_partner', '#disabled' => 1);
+            $form['account']['roles']['#options'] = array('referral_partner' => 'Referral Partner', 'authenticated' => 'Authenticated user');
+        }
+    }
+    if ($form_id == 'profile_referral_partner_add_form'){
+
+        $parameters = \Drupal::request()->query->all();
+        if (isset($parameters['org_id'])) {
+            $entity = entity_load('organization', $parameters['org_id']);
+            $form['field_rp_referral_organizations']['widget'][0]['target_id']['#default_value'] = $entity;
+            $form['field_rp_referral_organizations']['widget'][0]['target_id']['#disabled'] = 'disabled';
+        }
+    }
+
+    if ($form_id == 'profile_referral_partner_edit_form' || $form_id == 'profile_referral_partner_add_form'){
+      $form['#validate'][] = 'pcx_custom_org_count_validate';
+    }
+
+    // Make email field required for admins entering users
+    if ($form_id == 'user_form'){
+        $form['account']['mail']['#required'] = TRUE;
+    }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function pcx_custom_theme() {
+  return [
+    'pcx_custom' => [
+      'render element' => 'children',
+    ],
+  ];
+}
+
+
+function pcx_custom_preprocess_block(&$variables) {
+
+  $current_path = \Drupal::service('path.current')->getPath();
+  $path_args = explode('/', $current_path);
+  if (isset($path_args[1]) && isset($path_args[3])){
+    if ($path_args[1] == 'user' && $path_args[3] == 'referral_partner') {
+      $variables['content']['#title'] = 'Referral Partner Info';
+    }
+    if ($path_args[1] == 'user' && $path_args[3] == 'employee') {
+      $variables['content']['#title'] = 'Employee Info';
+    }
+    if ($path_args[1] == 'user' && $path_args[3] == 'customer') {
+      $variables['content']['#title'] = 'Customer Info';
+    }
+  }
+
+}
+
+function pcx_custom_field_group_content_element_keys_alter(&$keys) {
+
+  if (!isset($keys['commerce_product_variation'])) {
+    $keys['commerce_product_variation'] = 'product_variation';
+  }
+
+  if (!isset($keys['commerce_product'])) {
+    $keys['commerce_product'] = 'product';
+  }
+}
+
+/*
+ * Validation to prevent an organization from having more than five referral partners
+ */
+
+function pcx_custom_org_count_validate(&$form, \Drupal\Core\Form\FormStateInterface $form_state){
+  $values = $form_state->getValues();
+  $org_ids = $values['field_rp_referral_organizations'];
+
+  foreach ($org_ids as $org){
+    $org_id = $org['target_id'];
+    $result = db_query("SELECT profile.profile_id AS profile_id, organization_field_data_profile__field_rp_referral_organizations.id
+                          AS organization_field_data_profile__field_rp_referral_organizat
+                          FROM {profile} profile
+                          LEFT JOIN {profile__field_rp_referral_organizations} profile__field_rp_referral_organizations ON profile.profile_id = profile__field_rp_referral_organizations.entity_id
+                           AND profile__field_rp_referral_organizations.deleted = '0'
+                          LEFT JOIN {organization_field_data} organization_field_data_profile__field_rp_referral_organizations ON profile__field_rp_referral_organizations.field_rp_referral_organizations_target_id = organization_field_data_profile__field_rp_referral_organizations.id
+                          WHERE (organization_field_data_profile__field_rp_referral_organizations.id = :org_id )", array('org_id' => $org_id));
+    $count = 0;
+    foreach ($result as $org){
+      $count++;
+    }
+    if ($count > 5){
+      $form_state->setErrorByName('field_rp_referral_organizations', t('Maximum of 5 referral partners allowed per organization. The organization you tried to add is maxed out.'));
+    }
+
+  }
+}

@@ -1,0 +1,7 @@
+# pcx_orders.services.yml
+services:
+  pcx_orders_event_subscriber:
+    class: '\Drupal\pcx_orders\EventSubscriber\PCXOrdersEventSubscriber'
+    arguments: ['@language_manager', '@plugin.manager.mail']
+    tags:
+      - { name: 'event_subscriber' }

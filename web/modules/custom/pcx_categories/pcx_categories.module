@@ -1,0 +1,105 @@
+<?php
+
+/**
+ * @file
+ * Contains pcx_categories.module.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\user\Entity\User;
+
+/**
+ * Implements hook_help().
+ */
+function pcx_categories_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main module help for the pcx_categories module.
+    case 'help.page.pcx_categories':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      return $output;
+
+    default:
+  }
+}
+
+function pcx_categories_cron() {
+  //@TODO: Move cron schedule to settings form
+
+  $last_run = \Drupal::state()->get('pcx_categories_cron.last_run', 0);
+
+  // If 24 hours minutes passed since last time.
+  if (date('G') == 7 && (\Drupal::time()->getRequestTime() - $last_run) > (3600 * 24)) {
+    // Update last run.
+    \Drupal::state()->set('pcx_categories_cron.last_run', \Drupal::time()->getRequestTime());
+
+    pcx_categories_set_counts();
+  }
+  else {
+    \Drupal::logger('pcx_categories.cron')->notice("<pre>Skipping pcx_categories. Last run: ".print_r($last_run,true)."</pre>");
+  }
+}
+
+function pcx_categories_set_counts() {
+  $term_ids = \Drupal::EntityQuery('taxonomy_term')->condition('vid', 'catalog_category')->execute();
+  foreach ($term_ids as $term_id) {
+    $term = \Drupal\taxonomy\Entity\Term::load($term_id);
+    $count = pcx_categories_count_products($term_id);
+    $term->set('product_count', $count);
+    $term->save();
+  }
+}
+
+/**
+ * Implements hook_entity_base_field_info().
+ */
+function pcx_categories_entity_base_field_info(Drupal\Core\Entity\ContentEntityType $entity_type) {
+  if ($entity_type->id() === 'taxonomy_term') {
+    $fields = [];
+    $fields['product_count'] = Drupal\Core\Field\BaseFieldDefinition::create('integer')
+      ->setLabel('Product Count')
+      ->setDisplayOptions('view', [
+        'label' => 'hidden',
+        'weight' => -5,
+      ]);
+    return $fields;
+  }
+}
+
+/**
+ * Implements hook_install().
+ */
+function pcx_categories_install() {
+  $entity_manager = \Drupal::entityManager();
+  $definition = $entity_manager->getFieldStorageDefinitions('taxonomy_term')['product_count'];
+  $entity_manager->onFieldStorageDefinitionCreate($definition);
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function pcx_categories_uninstall() {
+  $entity_manager = \Drupal::entityManager();
+  $definition = $entity_manager->getLastInstalledFieldStorageDefinitions('taxonomy_term')['product_count'];
+  $entity_manager->onFieldStorageDefinitionDelete($definition);
+}
+
+function pcx_categories_count_products($term_id = 0, $i=0) {
+  $query = \Drupal::entityQuery('commerce_product')
+      ->condition('status', 1)
+      ->condition('field_product_category.entity.tid', $term_id);
+  $i += (int) $query->count()->execute();
+
+  $tree = \Drupal::entityTypeManager()->getStorage('taxonomy_term')->loadTree('catalog_category', $term_id, null, false);
+  foreach($tree as $term) {
+    $i += (int) pcx_categories_count_products($term->tid);
+  }
+
+  return $i;
+}
+
+function pcx_categories_page_attachments(array &$page) {
+  $user = \Drupal::currentUser();  
+  $page['#attached']['library'][] = 'pcx_categories/pcx_categories_catalog';
+  $page['#attached']['drupalSettings']['pcx_categories']['pcx_user_uid'] = $user->id();
+}

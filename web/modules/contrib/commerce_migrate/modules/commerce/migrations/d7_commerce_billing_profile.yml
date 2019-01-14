@@ -1,0 +1,27 @@
+id: d7_commerce_billing_profile
+label: Commerce customer profile
+migration_tags:
+  - Drupal 7
+  - Commerce 1
+source:
+  plugin: d7_billing_profile
+process:
+  profile_id: profile_id
+  revision_id: revision_id
+  type: type
+  uid: uid
+  status: status
+  created: created
+  changed: changed
+  data: data
+  address:
+    plugin: addressfield
+    source: commerce_customer_address
+destination:
+  plugin: 'entity:profile'
+  destination_module: profile
+migration_dependencies:
+  required:
+    - d7_user
+#    - d7_field
+#    - d7_field_instance

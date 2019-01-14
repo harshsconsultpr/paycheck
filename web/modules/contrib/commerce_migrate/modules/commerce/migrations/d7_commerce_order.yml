@@ -1,0 +1,45 @@
+id: d7_commerce_order
+label: Commerce order
+migration_tags:
+  - Drupal 7
+  - Commerce 1
+source:
+  plugin: d7_order
+process:
+  order_id: order_id
+  order_number: order_number
+  revision_id: revision_id
+  type: type
+  uid: uid
+  state:
+    plugin: commerce_migrate_order_state_default
+    source: status
+  created: created
+  placed: created
+  changed: changed
+  mail: mail
+  data: data
+  store:
+    plugin: default_value
+    default_value: 1
+  total_price:
+    plugin: commerce_migrate_commerce_price
+    source: commerce_order_total
+  order_items:
+    plugin: migration_lookup
+    migration: d7_commerce_order_item
+    source: commerce_line_items
+  billing_profile:
+    plugin: commerce_migrate_commerce_reference_revision
+    migration: d7_commerce_billing_profile
+    source: commerce_customer_billing
+    no_stub: true
+destination:
+  plugin: 'entity:commerce_order'
+  destination_module: commerce_order
+migration_dependencies:
+  required:
+  - d7_commerce_order_item
+  - d7_commerce_billing_profile
+#    - d7_field
+#    - d7_field_instance

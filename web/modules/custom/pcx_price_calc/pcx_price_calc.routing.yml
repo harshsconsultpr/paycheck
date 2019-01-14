@@ -1,0 +1,7 @@
+pcx_price_calc.settings:
+  path: '/admin/structure/pcx_price_calc/settings'
+  defaults:
+    _form: '\Drupal\pcx_price_calc\Form\PCXPriceCalcAdminForm'
+    _title: 'Price Calculations Administration'
+  requirements:
+    _permission: 'administer price markups'

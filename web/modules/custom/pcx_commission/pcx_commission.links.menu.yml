@@ -1,0 +1,14 @@
+
+# Commission menu items definition
+entity.commission.collection:
+  title: 'Commission list'
+  route_name: entity.commission.collection
+  description: 'List Commission entities'
+  parent: system.admin_structure
+  weight: 100
+
+commission.admin.structure.settings:
+  title: Commission settings
+  description: 'Configure Commission entities'
+  route_name: commission.settings
+  parent: system.admin_structure

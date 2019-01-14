@@ -1,0 +1,22 @@
+#sidewide_notice {
+  display: none;
+}
+
+@media only screen and (min-width: 992px) {
+  #sidewide_notice {
+      height: 40px;
+      line-height: 40px;
+      font-style: italic;
+      font-weight: 500;
+      font-size: 18px;
+      text-align: left;
+      display: block;
+      color: #043d66;
+  }
+}
+
+@media only screen and (min-width: 992px) {
+  .path-frontpage #navbar {
+    top: 40px;
+  }
+}

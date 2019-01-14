@@ -1,0 +1,63 @@
+<?php
+
+/**
+ * @file
+ * Contains pcx_user_import.module.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+
+use Drupal\migrate\Plugin\MigrationInterface;
+use Drupal\migrate\MigrateSkipRowException;
+use Drupal\migrate\Plugin\MigrateSourceInterface;
+use Drupal\migrate\Row;
+
+/**
+ * Implements hook_help().
+ */
+function pcx_user_import_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main module help for the pcx_user_import module.
+    case 'help.page.pcx_user_import':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Provides import plugin for migrate api.') . '</p>';
+      return $output;
+
+    default:
+  }
+}
+
+/**
+ * Implements hook_migration_plugins_alter().
+ */
+function pcx_user_import_migration_plugins_alter(&$definitions) {
+  $config = \Drupal::service('config.factory')->getEditable('pcx_user_import.settings');
+
+  $path = implode('/', [
+    \Drupal::service('file_system')->realpath(file_default_scheme() . "://"),
+    $config->get('integration_path'),
+    $config->get('integration_file')
+  ]);
+  \Drupal::logger('pcx_user_import')->notice($path);
+
+  $definitions['employee_user']['source']['path'] = $path;
+  $definitions['employee_profile']['source']['path'] = $path;
+}
+
+function pcx_user_import_migrate_prepare_row(Row $row, MigrateSourceInterface $source, MigrationInterface $migration) {
+  if ($migration->id() == 'employee_profile') {
+    $row->setSourceProperty('emp_status', '50');
+
+    $hire_date = DateTime::createFromFormat('n/j/Y', $row->getSourceProperty('hire_date'));
+
+    $origin_date = new DateTime('now');
+    $origin_date->modify('-1 year');
+
+    // \Drupal::logger('pcx_user_import')->notice("HIRE: ".$hire_date->format('Y-m-d')." \nORIGIN: ".$origin_date->format('Y-m-d'));
+
+    if($hire_date < $origin_date) {
+      $row->setSourceProperty('emp_status', '48');
+    }
+  }
+}

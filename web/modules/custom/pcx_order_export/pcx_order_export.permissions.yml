@@ -1,0 +1,22 @@
+add order export entities:
+  title: 'Create new Order Export entities'
+
+administer order export entities:
+  title: 'Administer Order Export entities'
+  description: 'Allow to access the administration form to configure Order Export entities.'
+  restrict access: true
+
+delete order export entities:
+  title: 'Delete Order Export entities'
+
+edit order export entities:
+  title: 'Edit Order Export entities'
+
+access order export overview:
+  title: 'Access the Order Export overview page'
+
+view published order export entities:
+  title: 'View published Order Export entities'
+
+view unpublished order export entities:
+  title: 'View unpublished Order Export entities'

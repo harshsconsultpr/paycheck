@@ -1,0 +1,9 @@
+name: Paycheck Exchange Commission
+type: module
+description: Adds commission entity and state management logic.
+core: 8.x
+package: Custom
+dependencies:
+  - pcx_orders
+  - pcx_rates
+  - pcx_orgs

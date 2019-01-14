@@ -1,0 +1,5 @@
+name: Paycheck Exchange User Expiration
+type: module
+description: Automatically Expire User Accounts Based on field setting
+core: 8.x
+package: Custom

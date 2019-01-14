@@ -1,0 +1,18 @@
+<?php
+
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use Drupal\Core\Routing\TrustedRedirectResponse;
+
+
+function pcx_misc_user_logout($account) {
+	global $base_url;
+
+//echo "<br/>";
+//print_r($account);
+//die();
+//$redirect = new TrustedRedirectResponse($url);
+ // $redirect->send();
+}
+
+
+?>

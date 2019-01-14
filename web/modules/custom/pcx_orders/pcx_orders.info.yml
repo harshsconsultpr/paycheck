@@ -1,0 +1,5 @@
+name: Paycheck Exchange Order Workflow
+type: module
+description: Provides workflow, order type, and status subscription logic for Paycheck orders.
+core: 8.x
+package: Custom

@@ -1,0 +1,6 @@
+pcx_categories_catalog:
+    version: 1.x
+    js:
+      js/pcx_categories_catalog.js: {}
+    dependencies:
+      - core/jquery

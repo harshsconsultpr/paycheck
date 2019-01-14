@@ -1,0 +1,22 @@
+add commission rate entities:
+  title: 'Create new Commission rate entities'
+
+administer commission rate entities:
+  title: 'Administer Commission rate entities'
+  description: 'Allow to access the administration form to configure Commission rate entities.'
+  restrict access: true
+
+delete commission rate entities:
+  title: 'Delete Commission rate entities'
+
+edit commission rate entities:
+  title: 'Edit Commission rate entities'
+
+access commission rate overview:
+  title: 'Access the Commission rate overview page'
+
+view published commission rate entities:
+  title: 'View published Commission rate entities'
+
+view unpublished commission rate entities:
+  title: 'View unpublished Commission rate entities'

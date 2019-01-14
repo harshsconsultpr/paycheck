@@ -1,0 +1,38 @@
+<?php
+
+function pcx_auth_form_alter(&$form, $form_state, $form_id) {
+  if ($form_id != 'system_site_information_settings') {
+    return false;
+  }
+
+  $config = \Drupal::service('config.factory')->getEditable('pcx_auth.settings');
+  $field_auth_front_path = $config->get('field_auth_front_path');
+  $form['front_page']['field_auth_front_path'] = array(
+   '#type' => 'textfield',
+   '#title' => t('Authenticated front page'),
+   '#default_value' => $field_auth_front_path,
+   '#field_prefix' => \Drupal::request()->getSchemeAndHttpHost(),
+   '#description' => "Optionally, specify a relative URL to display as the front page. Leave blank to display the default front page.",
+   '#size' => 40,
+   '#maxlength' => 128
+  );
+
+  $form['actions']['submit']['#submit'][] = 'pcx_auth_basic_edit_submit';
+}
+
+function pcx_auth_basic_edit_submit($form, $form_state) {
+  $config = \Drupal::service('config.factory')->getEditable('pcx_auth.settings');
+  $config->set('field_auth_front_path', $form_state->getValue('field_auth_front_path'))->save();
+}
+
+function pcx_auth_user_login(\Drupal\user\UserInterface $account) {
+  $current_request = \Drupal::service('request_stack')->getCurrentRequest();
+  if (strpos($current_request->getRequestUri(), "/user/reset/") === FALSE ) {
+    $config = \Drupal::service('config.factory')->getEditable('pcx_auth.settings');
+    $current_request->query->set(
+      'destination',
+      $config->get('field_auth_front_path')
+    );
+  }
+
+}

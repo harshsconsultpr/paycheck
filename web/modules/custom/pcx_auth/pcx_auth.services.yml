@@ -1,0 +1,5 @@
+services:
+  pcx_auth.event_subscriber:
+    class: Drupal\pcx_auth\EventSubscriber\AuthSubscriber
+    tags:
+      - {name: event_subscriber}

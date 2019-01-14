@@ -1,0 +1,46 @@
+id: d6_ubercart_field_attribute
+label: Ubercart attribute field configuration
+migration_tags:
+  - Drupal 6
+  - Ubercart
+source:
+  plugin: d6_ubercart_attribute
+  constants:
+    langcode: en
+    entity_type: commerce_product_variation
+    field_name_prefix: attribute
+    target_type: commerce_product_attribute_value
+    type: entity_reference
+process:
+  entity_type: 'constants/entity_type'
+  langcode: 'constants/langcode'
+  field_machine_name:
+    plugin: machine_name
+    source: name
+  field_name:
+    plugin: concat
+    source:
+      - 'constants/field_name_prefix'
+      - '@field_machine_name'
+    delimiter: _
+  type: 'constants/type'
+  settings/target_type: 'constants/target_type'
+  # Set the cardinality from the 4 display types
+  # used in module uc_attribute.
+  # @link http://cgit.drupalcode.org/ubercart/tree/uc_attribute/uc_attribute.module?h=6.x-2.x#n1378 @endlink
+  cardinality:
+    plugin: static_map
+    bypass: true
+    source: display
+    map:
+    # Text field
+      0: 1
+    # Select box
+      1: 1
+    # Radio buttons
+      2: 1
+    # Checkboxes
+      3: -1
+destination:
+  plugin: entity:field_storage_config
+  destination_module: field

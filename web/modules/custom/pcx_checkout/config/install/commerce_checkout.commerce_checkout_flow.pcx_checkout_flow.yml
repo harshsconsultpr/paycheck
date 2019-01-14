@@ -1,0 +1,52 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - commerce_payment
+    - commerce_promotion
+    - pcx_checkout
+id: pcx_checkout_flow
+label: 'PCX Checkout Flow'
+plugin: pcx_checkout_flow_plugin
+configuration:
+  display_checkout_progress: false
+  panes:
+    order_summary:
+      view: ''
+      step: information
+      weight: '0'
+    pcx_deduction:
+      step: information
+      weight: '1'
+    completion_message:
+      step: complete
+      weight: '4'
+    review:
+      step: _disabled
+      weight: '5'
+    coupon_redemption:
+      allow_multiple: false
+      step: _disabled
+      weight: '6'
+    payment_information:
+      step: _disabled
+      weight: '7'
+    contact_information:
+      double_entry: false
+      step: _disabled
+      weight: '8'
+    login:
+      allow_guest_checkout: true
+      allow_registration: false
+      step: _disabled
+      weight: '9'
+    payment_process:
+      capture: true
+      step: _disabled
+      weight: '10'
+    pcx_review:
+      step: confirm
+      weight: '3'
+    pcx_summary:
+      step: confirm
+      weight: '2'

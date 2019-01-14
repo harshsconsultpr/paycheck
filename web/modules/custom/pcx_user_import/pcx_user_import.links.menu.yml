@@ -1,0 +1,6 @@
+user_import.admin_settings_form_link:
+  title: User Import settings
+  description: 'Configure User Import'
+  route_name: user_import.admin_settings_form
+  parent: system.admin_config
+  weight: 99

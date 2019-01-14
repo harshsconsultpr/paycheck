@@ -1,0 +1,28 @@
+# Ubercart 6 Product Variation Migration
+#
+# For my use case, I had to create several different product variation types
+# and write an individual migration for each one. This is meant to be an example.
+id: d6_ubercart_product_variation
+label: Migrate product variations from Ubercart
+migration_tags:
+  - Drupal 6
+  - Ubercart
+source:
+  plugin: d6_ubercart_product_variation
+process:
+  type:
+    plugin: default_value
+    # 'default' is the default 'commerce_product_variation' bundle initially
+    # installed
+    default_value: default
+  uid: uid
+  sku: model
+  title: title
+  'price/number': sell_price
+  'price/currency_code': currency
+  status: status
+  created: created
+  changed: changed
+destination:
+  plugin: entity:commerce_product_variation
+  destination_module: commerce_product

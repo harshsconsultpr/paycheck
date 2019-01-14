@@ -1,0 +1,50 @@
+pcx_orders_fulfillment:
+  id: pcx_orders_fulfillment
+  group: commerce_order
+  label: 'PCX Fulfillment'
+  states:
+    draft:
+      label: 'Draft'
+    pending:
+      label: 'Pending'
+    warehouse:
+      label: 'Processing'
+    shipped:
+      label: 'Shipped'
+    paying:
+      label: 'Paying'
+    completed:
+      label: 'Completed'
+    canceled:
+      label: 'Canceled'
+    collections:
+      label: 'Collections'
+  transitions:
+    place:
+      label: 'Place order'
+      from: [draft]
+      to: pending
+    export:
+      label: 'Export order'
+      from: [pending]
+      to: warehouse
+    ship:
+      label: 'Ship order'
+      from: [warehouse]
+      to: shipped
+    payroll:
+      label: 'Payroll deduct order'
+      from: [shipped]
+      to: paying
+    cancel:
+      label: 'Cancel order'
+      from: [draft, pending, warehouse]
+      to:   canceled
+    collect:
+      label: 'Collections'
+      from: [pending, warehouse, shipped, paying]
+      to:   collections
+    complete:
+      label: 'Complete order'
+      from: [paying, collections]
+      to:   completed

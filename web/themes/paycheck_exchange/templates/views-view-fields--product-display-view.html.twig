@@ -1,0 +1,115 @@
+{#
+/**
+ * @file
+ * Default view template to display all the fields in a row.
+ *
+ * Available variables:
+ * - view: The view in use.
+ * - fields: A list of fields, each one contains:
+ *   - content: The output of the field.
+ *   - raw: The raw data for the field, if it exists. This is NOT output safe.
+ *   - class: The safe class ID to use.
+ *   - handler: The Views field handler controlling this field.
+ *   - inline: Whether or not the field should be inline.
+ *   - wrapper_element: An HTML element for a wrapper.
+ *   - wrapper_attributes: List of attributes for wrapper element.
+ *   - separator: An optional separator that may appear before a field.
+ *   - label: The field's label text.
+ *   - label_element: An HTML element for a label wrapper.
+ *   - label_attributes: List of attributes for label wrapper.
+ *   - label_suffix: Colon after the label.
+ *   - element_type: An HTML element for the field content.
+ *   - element_attributes: List of attributes for HTML element for field content.
+ *   - has_label_colon: A boolean indicating whether to display a colon after
+ *     the label.
+ *   - element_type: An HTML element for the field content.
+ *   - element_attributes: List of attributes for HTML element for field content.
+ * - row: The raw result from the query, with all data it fetched.
+ *
+ * @see template_preprocess_views_view_fields()
+ *
+ * @ingroup themeable
+ */
+#}
+
+{% set url = fields.url.content|render|striptags|trim %}
+
+<div class="product-wpr">
+  <div class="wpr-grid">
+    <a class="image-column" href="{{ url }}" hreflang="en">
+      {{ fields.field_remote_image.content }}
+      <div class="title">{{ fields.title.content }}</div>
+    </a>
+    <div class="details">
+      <div class="price-rating">
+        <div class="deduction-estimate">
+          <div class="estimate">
+            <span class="estimate-price">${{ deduction }}</span>
+            <span class="estimate-text">Per Paycheck</span>
+          </div>
+          <div class="disclaimer">
+            <span class="disclaimer-text">Paycheck deductions over 12 month period.</span>
+          </div>
+        </div>
+        <div class="price"><span class="name">Item Price:</span> ${{ fields.variation_number.raw.0|number_format(2, '.', ',') }}</div>
+      </div>
+      <div class="specs">
+        {{ fields.field_abt_product_vsn.content }}
+        {#{ fields.sku.content }#}
+      </div>
+    </div>
+    <div class="cart">
+      {{ fields.variations.content }}
+    </div>
+  </div>
+
+  <div class="wpr-list grid-equalHeight-noGutter-top">
+    <div class="image-column col-3_md-3_sm-6">
+      <div class="inner">
+        {{ fields.field_remote_image.content }}
+      </div>
+    </div>
+    <div class="details-column col-6_md-9_sm-6">
+      <div class="inner">
+        <a class="" href="{{ url }}" hreflang="en">
+          <div class="title">{{ fields.title.content }}</div>
+        </a>
+        <div class="details">
+          <div class="body">
+            {{ fields.body.content }}
+          </div>
+          
+            <div class="features">
+              {% if fields.field_product_features.content %}
+                {{ fields.field_product_features.content }}
+              {% endif %}
+            </div>
+          
+
+          <div class="model-sku">
+            {{ fields.field_abt_product_vsn.content }} {#{ fields.sku.content }#}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="price-column col-3_md-12_sm-12">
+      <div class="inner">
+        <div class="price-rating">
+          <div class="deduction-estimate">
+            <div class="estimate">
+              <span class="estimate-price">${{ deduction }}</span>
+              <span class="estimate-text">Per Paycheck</span>
+            </div>
+            <div class="disclaimer">
+              <span class="disclaimer-text">Paycheck deductions over 12 month period.</span>
+            </div>
+          </div>
+          <div class="price"><span class="name">Item Price:</span> ${{ fields.variation_number.raw.0|number_format(2, '.', ',') }}</div>
+        </div>
+        <div class="cart">
+          {{ fields.variations.content }}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

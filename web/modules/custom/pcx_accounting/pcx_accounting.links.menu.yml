@@ -1,0 +1,92 @@
+
+# placeholder for top menu
+system.structure.accounting:
+  title: 'Accounting'
+  route_name: entity.commission_statement.collection
+  description: 'Top structure level accounting menu'
+  parent: system.admin_structure
+  weight: 100
+
+# Commission Statement menu items definition
+entity.commission_statement.collection:
+  title: 'Commission Statement list'
+  route_name: entity.commission_statement.collection
+  description: 'List Commission Statement entities'
+  parent: system.structure.accounting
+  weight: 100
+
+commission_statement.admin.structure.settings:
+  title: Commission Statement settings
+  description: 'Configure Commission Statement entities'
+  route_name: commission_statement.settings
+  parent: system.structure.accounting
+
+# Organization Invoice menu items definition
+entity.organization_invoice.collection:
+  title: 'Organization Invoice list'
+  route_name: entity.organization_invoice.collection
+  description: 'List Organization Invoice entities'
+  parent: system.structure.accounting
+  weight: 100
+
+organization_invoice.admin.structure.settings:
+  title: Organization Invoice settings
+  description: 'Configure Organization Invoice entities'
+  route_name: organization_invoice.settings
+  parent: system.structure.accounting
+
+# Organization invoice line item menu items definition
+entity.organization_invoice_line_item.collection:
+  title: 'Organization invoice line item list'
+  route_name: entity.organization_invoice_line_item.collection
+  description: 'List Organization invoice line item entities'
+  parent: system.structure.accounting
+  weight: 100
+
+organization_invoice_line_item.admin.structure.settings:
+  title: Organization invoice line item settings
+  description: 'Configure Organization invoice line item entities'
+  route_name: organization_invoice_line_item.settings
+  parent: system.structure.accounting
+
+# Deduction File menu items definition
+entity.deduction_file.collection:
+  title: 'Deduction File list'
+  route_name: entity.deduction_file.collection
+  description: 'List Deduction File entities'
+  parent: system.structure.accounting
+  weight: 100
+
+deduction_file.admin.structure.settings:
+  title: Deduction File settings
+  description: 'Configure Deduction File entities'
+  route_name: deduction_file.settings
+  parent: system.structure.accounting
+
+# Deduction file line item menu items definition
+entity.deduction_file_line_item.collection:
+  title: 'Deduction file line item list'
+  route_name: entity.deduction_file_line_item.collection
+  description: 'List Deduction file line item entities'
+  parent: system.structure.accounting
+  weight: 100
+
+deduction_file_line_item.admin.structure.settings:
+  title: Deduction file line item settings
+  description: 'Configure Deduction file line item entities'
+  route_name: deduction_file_line_item.settings
+  parent: system.structure.accounting
+
+# Commission statement line item menu items definition
+entity.commission_statement_line_item.collection:
+  title: 'Commission statement line item list'
+  route_name: entity.commission_statement_line_item.collection
+  description: 'List Commission statement line item entities'
+  parent: system.structure.accounting
+  weight: 100
+
+commission_statement_line_item.admin.structure.settings:
+  title: Commission statement line item settings
+  description: 'Configure Commission statement line item entities'
+  route_name: commission_statement_line_item.settings
+  parent: system.structure.accounting

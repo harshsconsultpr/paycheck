@@ -1,0 +1,22 @@
+add order cancel entities:
+  title: 'Create new Order Cancel entities'
+
+administer order cancel entities:
+  title: 'Administer Order Cancel entities'
+  description: 'Allow to access the administration form to configure Order Cancel entities.'
+  restrict access: true
+
+delete order cancel entities:
+  title: 'Delete Order Cancel entities'
+
+edit order cancel entities:
+  title: 'Edit Order Cancel entities'
+
+access order cancel overview:
+  title: 'Access the Order Cancel overview page'
+
+view published order cancel entities:
+  title: 'View published Order Cancel entities'
+
+view unpublished order cancel entities:
+  title: 'View unpublished Order Cancel entities'

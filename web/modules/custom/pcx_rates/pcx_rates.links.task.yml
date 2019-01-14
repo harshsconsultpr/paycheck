@@ -1,0 +1,18 @@
+# Commission rate routing definition
+
+entity.commission_rate.canonical:
+  route_name: entity.commission_rate.canonical
+  base_route: entity.commission_rate.canonical
+  title: 'View'
+
+entity.commission_rate.edit_form:
+  route_name: entity.commission_rate.edit_form
+  base_route: entity.commission_rate.canonical
+  title: 'Edit'
+
+entity.commission_rate.delete_form:
+  route_name:  entity.commission_rate.delete_form
+  base_route:  entity.commission_rate.canonical
+  title: Delete
+  weight: 10
+

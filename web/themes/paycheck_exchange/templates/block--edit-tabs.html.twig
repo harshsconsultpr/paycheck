@@ -1,0 +1,53 @@
+{% extends "block--bare.html.twig" %}
+{#
+/**
+ * @file
+ * Theme override for tabs.
+ *
+ * @ingroup templates
+ */
+#}
+{% block content %}
+  {% if content %}
+    
+    <nav class="tabs sr-only" role="navigation" aria-label="{{ 'Tabs'|t }}">
+      {{ content }}
+    </nav>
+    
+    <nav class="edit-tabs grid-middle-reverse_sm-1" role="navigation" aria-label="{{ 'Tabs'|t }}">
+      
+      
+      {% for links in content['#primary'] %}
+      	{#{ kint(links['#link'].title) }#}
+        {#{ kint(links) }#}
+    		{% set link_title = links['#link'].title %}
+    		{% set access = links['#access'] %}
+    		
+    		{% if access.isAllowed() %}
+          
+  	      {% if link_title == 'Edit' %}
+  	      	{% set link_url = links['#link'].url %}
+            {% set active = links['#active'] ? 'active' %}
+            <div class="col">
+  	      	  <a class="nav-link btn btn-info {{ active }}" href="{{ link_url }}">User Info</a>
+            </div>
+  	      {% elseif link_title == 'Referral Partner' %}
+  	      	{% set link_url = links['#link'].url %}
+            {% set active = links['#active'] ? 'active' %}
+            <div class="col">
+  	      	  <a class="nav-link btn btn-info {{ active }}" href="{{ link_url }}">Referral Partner Profile</a>
+            </div>
+  	      {% elseif link_title == 'Employee' %}
+  	      	{% set link_url = links['#link'].url %}
+            {% set active = links['#active'] ? 'active' %}
+            <div class="col">
+  	      	  <a class="nav-link btn btn-info {{ active }}" href="{{ link_url }}">Employee Profile</a>
+            </div>
+  	      {% endif %}
+  	    {% endif %}
+      	
+      {% endfor %}
+      
+    </nav>
+  {% endif %}
+{% endblock %}

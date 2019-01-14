@@ -1,0 +1,5 @@
+name: Paycheck Exchange Commission Rates
+type: module
+description: Paycheck Exchange Commission Rates Entity
+core: 8.x
+package: Custom

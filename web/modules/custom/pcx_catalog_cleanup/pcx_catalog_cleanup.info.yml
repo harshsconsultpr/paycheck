@@ -1,0 +1,5 @@
+name: Paycheck Exchange Catalog Cleanup
+type: module
+description: Nightly remove products feed processing from Abt.
+core: 8.x
+package: Custom

@@ -1,0 +1,9 @@
+name: Paycheck Exchange Employee Import
+type: module
+description: Provides import plugin for migrate api.
+core: 8.x
+package: Custom
+dependencies:
+  - migrate_tools
+  - migrate_plus
+  - migrate_source_csv

@@ -1,0 +1,18 @@
+
+# Commission rate menu items definition
+entity.commission_rate.collection:
+  title: 'Commission rate list'
+  route_name: entity.commission_rate.collection
+  description: 'List Commission rate entities'
+  parent: system.admin_structure
+  weight: 100
+
+
+# Commission rate type menu items definition
+entity.commission_rate_type.collection:
+  title: 'Commission rate type'
+  route_name: entity.commission_rate_type.collection
+  description: 'List Commission rate type (bundles)'
+  parent: system.admin_structure
+  weight: 99
+

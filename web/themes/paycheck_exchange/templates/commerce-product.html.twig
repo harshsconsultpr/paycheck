@@ -1,0 +1,63 @@
+{#
+/**
+ * @file
+ *
+ * Default product template.
+ *
+ * Available variables:
+ * - attributes: HTML attributes for the wrapper.
+ * - product: The rendered product fields.
+ *   Use 'product' to print them all, or print a subset such as
+ *   'product.title'. Use the following code to exclude the
+ *   printing of a given field:
+ *   @code
+ *   {{ product|without('title') }}
+ *   @endcode
+ * - product_entity: The product entity.
+ * - product_url: The product URL.
+ *
+ * @ingroup themeable
+ */
+ {{ kint(product) }}
+#}
+
+
+
+<article{{ attributes }}>
+  {# {{- product|without('variation_attributes') -}} #}
+  <div id="product-details" class="grid-equalHeight">
+  	<div id="product-left" class="col-7_lg-7_md-6_sm-12">
+  		<div class="inner">
+  			{{ product.field_remote_image }}
+  		</div>
+  	</div>
+  	<div id="product-right" class="col-5_lg-5_md-6_sm-12">
+  		<div class="inner">
+  			{% if deduction %}
+          <div class='deduction-estimate'>
+            <div class='estimate'>
+              <span class='estimate-price'>{{ deduction }}</span> 
+              <span class='estimate-text'>Per Paycheck</span>
+            </div>
+            <div class='disclaimer'>
+              <span class='disclaimer-text'>Paycheck deductions over 12 month period.</span>
+            </div>
+          </div>
+        {% endif %}
+        <div class="price-wpr">
+					<span class='actual-price'>{{ product.variation_price }}</span>
+					<span class='actual-text'>Item Price</span>
+				</div>
+        
+
+
+
+  			<div class="sku-model">{{ product.variation_sku }} <span class="del">|</span> {{ product.field_abt_product_vsn }}</div>
+  			{{ product.body }}
+  			{{ product.variations }}
+
+  		</div>
+  	</div>
+  </div>
+  {{ product.group_specifications }}
+</article>

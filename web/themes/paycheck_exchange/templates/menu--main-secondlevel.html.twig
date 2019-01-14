@@ -1,0 +1,94 @@
+{#
+/**
+ * @file
+ * Default theme implementation to display a menu.
+ *
+ * Available variables:
+ * - menu_name: The machine name of the menu.
+ * - items: A nested list of menu items. Each menu item contains:
+ *   - attributes: HTML attributes for the menu item.
+ *   - below: The menu item child items.
+ *   - title: The menu link title.
+ *   - url: The menu link url, instance of \Drupal\Core\Url
+ *   - localized_options: Menu link localized options.
+ *
+ * @ingroup templates
+ */
+#}
+{% import _self as menus %}
+
+{#
+  We call a macro which calls itself to render the full tree.
+  @see http://twig.sensiolabs.org/doc/tags/macro.html
+#}
+{{ menus.menu_links(items, attributes, 0) }}
+
+{% macro menu_links(items, attributes, menu_level) %}
+  {% import _self as menus %}
+  {% if items %}
+    {% if menu_level == 0 %}
+      <ul{{ attributes.addClass('menu', 'nav', 'navbar-nav') }}>
+    {% else %}
+      <ul{{ attributes.addClass('dropdown-menu') }}>
+    {% endif %}
+    {% for item in items %}
+      {%
+        set item_classes = [
+          item.is_expanded ? 'expanded',
+          item.is_expanded and menu_level == 0 ? 'dropdown',
+          item.in_active_trail ? 'active',
+		  'nav-first-lvl',
+        ]
+      %}
+	  
+	  {% if item.in_active_trail %}
+		  {% if menu_level == 0 %}
+			<li{{ item.attributes.addClass(item_classes, 'nav-parent') }}>
+			{{ link(item.title, item.url) }}
+		  {% else %}
+			<li{{ item.attributes.addClass(item_classes) }}>
+			{{ link(item.title, item.url) }}
+		  {% endif %}
+		  </li>
+		  {% if item.below %}
+			
+			
+			<ul{{ attributes }}>
+			{% for child in item.below %}
+				{%
+					set child_classes = [
+					  child.is_expanded ? 'expanded',
+					  child.is_expanded and menu_level == 0 ? 'dropdown',
+					  child.in_active_trail ? 'active',
+					  'nav-second-lvl',
+					]
+				%}
+				<li{{ child.attributes.addClass(child_classes) }}>
+					{{ link(child.title, child.url) }}
+				</li>
+				{% if child.below %}
+					
+					<ul{{ attributes.addClass('child-lvl') }}>
+						{% for child_two in child.below %}
+							{%
+								set child_two_classes = [
+								  child_two.is_expanded ? 'expanded',
+								  child_two.is_expanded and menu_level == 0 ? 'dropdown',
+								  child_two.in_active_trail ? 'active',
+								  'nav-third-lvl',
+								]
+							%}
+							<li{{ child_two.attributes.addClass(child_two_classes) }}>
+								{{ link(child_two.title, child_two.url) }}
+							</li>
+						{% endfor %}
+					</ul>
+				{% endif %}
+			{% endfor %}
+			</ul>
+		  {% endif %}
+	  {% endif %}
+    {% endfor %}
+    </ul>
+  {% endif %}
+{% endmacro %}

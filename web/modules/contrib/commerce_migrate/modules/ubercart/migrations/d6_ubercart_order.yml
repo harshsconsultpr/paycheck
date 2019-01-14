@@ -1,0 +1,48 @@
+# Ubercart 6 Order Migration
+id: d6_ubercart_order
+label: Migrate orders from Ubercart
+migration_tags:
+  - Drupal 6
+  - Ubercart
+source:
+  plugin: d6_ubercart_order
+  constants:
+    store_id: 1
+process:
+  order_id: order_id
+  order_number: order_id
+  uid: uid
+  type:
+    plugin: default_value
+    default_value: default
+  store_id: 'constants/store_id'
+  mail: primary_email
+  billing_profile:
+    plugin: commerce_migrate_commerce_reference_revision
+    migration: d6_ubercart_billing_profile
+    source: order_id
+    no_stub: true
+  state:
+    plugin: static_map
+    source: order_status
+    default_value: draft
+    map:
+      # These are the equivalent order states I was able to gather from the
+      # documentation.
+      in_checkout: draft
+      pending: validation
+      payment_received: completed
+      completed: completed
+      canceled: canceled
+  ip_address: host
+  data: data
+  created: created
+  changed: modified
+  placed: modified
+destination:
+  plugin: 'entity:commerce_order'
+  destination_module: commerce_order
+migration_dependencies:
+  required:
+    - d6_ubercart_store
+    - d6_ubercart_billing_profile

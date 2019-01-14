@@ -1,0 +1,73 @@
+<?php
+
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Session\AccountProxyInterface;
+use Drupal\user\Entity\User;
+
+function pcx_price_calc_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id){
+
+  if (substr($form_id, 0, 53 ) === "commerce_order_item_add_to_cart_form_commerce_product"){
+//\Drupal::logger('$form')->notice('<pre>' . print_r($form,1) . '</pre>');
+
+    //unset($form['purchased_entity']['widget'][0]['attributes']);
+    $storage = &$form_state->getStorage();
+    $product = $storage['product'];
+    $stock_level = $product->get('field_product_stock_level')->getString();
+
+    // Disable 'add to cart' for out of stock items and organization roles
+    if (is_numeric($stock_level) && $stock_level < 1){
+      $form['actions']['submit']['#attributes'] = array('disabled' => 'disabled');
+      $form['actions']['submit']['#value'] = 'Out of Stock';
+      $form['actions']['submit']['#validate'] = array('pcx_price_calc_add_to_cart_form_disabled_validate');
+    }
+
+    // Load the current user object
+    $account = User::load(\Drupal::currentUser()->id());
+
+    if ($account->hasRole('administrator') || $account->hasRole('paycheck_exc')){
+      //Skip remaining logic for admins
+      return;
+    }
+    if (!$account->hasRole('employee')){
+      unset($form['actions']['submit']);
+      unset($form['actions']['wishlist']);
+      return;
+    }
+    // Load user profile
+    $profile = \Drupal::entityManager()->getStorage('profile')->loadByUser($account, 'employee');
+
+    if (is_object($profile)){
+      // Check if the employee is in GOOD STANDING
+      $emp_status = $profile->field_emp_status->getString();
+
+      if ($emp_status != 48) {
+        unset($form['actions']['submit']);
+        if ($emp_status == 49) {
+          unset($form['actions']['wishlist']);
+        }
+        return;
+      }
+
+      // Check if the employee's organization is in GOOD STANDING
+      $referenceItem = $profile->get('field_emp_organization_ref')->first();
+      $entityReference = $referenceItem->get('entity');
+      $entityAdapter = $entityReference->getTarget();
+      $referencedEntity = $entityAdapter->getValue();
+
+      $org_status = $referencedEntity->field_org_organization_status->getString();
+
+      if ($org_status != 44) {
+        unset($form['actions']['submit']);
+        return;
+      }
+    }
+  }
+}
+
+/**
+ * Implements custom validate.
+ */
+function pcx_price_calc_add_to_cart_form_disabled_validate(array &$form, FormStateInterface $form_state){
+  //dpm($form_state);
+  $form_state->setErrorByName('submit', t('This item is currently not available for online purchase. Please contact for availibility and options.'));
+}

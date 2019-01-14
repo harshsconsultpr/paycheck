@@ -1,0 +1,196 @@
+<?php
+
+/**
+ * @file
+ * Contains pcx_order_export.module.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\pcx_order_export\Entity\OrderExportInterface;
+use Drupal\pcx_order_export\Entity\OrderExport;
+use Drupal\Core\Database\Database;
+
+/**
+ * Implements hook_help().
+ */
+function pcx_order_export_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main module help for the pcx_order_export module.
+    case 'help.page.pcx_order_export':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Order export logic.') . '</p>';
+      return $output;
+
+    default:
+  }
+}
+
+function pcx_order_export_cron() {
+  $config = \Drupal::service('config.factory')->getEditable('pcx_order_export.settings');
+  $path = implode('/', [
+    \Drupal::service('file_system')->realpath(file_default_scheme() . "://"),
+    $config->get('integration_path')
+  ]);
+
+  $query = \Drupal::entityQuery('order_export')
+    ->condition('status', 0);
+  $entity_ids = $query->execute();
+  foreach ($entity_ids as $key => $value) {
+    if ($value == '86') {
+       unset($entity_ids[$key]);
+     }
+  }
+  $entities = entity_load_multiple('order_export', $entity_ids);
+
+  foreach ($entities as $order_export) {
+
+     
+    $order = $order_export
+      ->get('order_id')
+      ->first()
+      ->get('entity')
+      ->getTarget()
+      ->getValue();
+
+    // Order items in the cart.
+    $items = $order->getItems();
+    $line_items = [];
+    \Drupal::logger('pcx_order_export')->notice("Processing line items for order: #{$order->id()}\n".print_r($items,true));
+
+    foreach($items as $item) {
+      $id = $item->purchased_entity->getString(); // variation id
+      \Drupal::logger('pcx_order_export')->notice("Item order: #{$order->id()}\n".print_r($id,true));
+
+      if ($product_variation = entity_load('commerce_product_variation', $id)) {
+        if ($sku = $product_variation->get('sku')->getString()) {
+          \Drupal::logger('pcx_order_export')->notice("Product order: #{$order->id()}\n".print_r($product,true));
+
+          $msrp_results = Database::getConnection()->query(
+            "SELECT
+              ROUND(msrp.field_product_msrp_number, 2) as msrp,
+              ROUND(ship.field_product_shipping_price_value, 2) as ship
+            FROM commerce_product_field_data product
+            LEFT JOIN
+            	commerce_product__field_abt_product_vsn vsn
+            		ON vsn.entity_id = product.product_id
+            LEFT JOIN
+            	commerce_product__field_product_msrp msrp
+            		ON msrp.entity_id = product.product_id
+            LEFT JOIN
+            	commerce_product__field_product_shipping_price ship
+            		ON ship.entity_id = product.product_id
+            WHERE
+            	vsn.field_abt_product_vsn_value = :vsn
+            ;", [ 'vsn' => $sku ]
+          )->fetchAll(\PDO::FETCH_ASSOC);
+
+          foreach($msrp_results as $msrp_result) {
+            $msrp = $msrp_result['msrp'];
+            $shipping_price = $msrp_result['ship'];
+          }
+
+          $line_items[] = array(
+              'purchased_entity' => $id,
+              'sku' => $sku,
+              'title' => $item->title->getString(),
+              'quantity' => $item->quantity->getString(),
+              'unit_price' => $msrp, // $item->get('unit_price')->getValue(),
+              'shipping_price' => $shipping_price, // $item->get('unit_price')->getValue(),
+              'total_price' => $item->get('total_price')->getValue(),
+          );
+        }
+        else {
+          \Drupal::logger('pcx_order_export')->notice("Failed to get sku from product variation on order: #{$order->id()}");
+        }
+      }
+      else {
+        \Drupal::logger('pcx_order_export')->notice("Failed to get product variation for item ({$id}) on order: #{$order->id()}");
+      }
+    }
+
+    if (is_array($line_items) && count($line_items) > 0) {
+      // Custom processing logic.
+      $order_id = $order->id();
+
+      $account = \Drupal\user\Entity\User::load($order->getCustomerId());
+      if ($account->hasRole('employee')) {
+        $profile = \Drupal::entityManager()->getStorage('profile')->loadByUser($account, 'employee');
+        // dpm($profile);
+        $phone = $profile->field_emp_phone->getString();
+      }
+      else {
+        $phone = '';
+      }
+
+      // dpm($order);
+      $shipments = $order->get('shipments')->referencedEntities();
+      if (null != $shipments[0]->get('shipping_profile')->referencedEntities()) {
+        $profile = $shipments[0]->get('shipping_profile')->referencedEntities();
+        $address = $profile[0]->get('address')->getValue();
+        $address = $address[0];
+
+        $first_name = $address['given_name'];
+        $last_name = $address['family_name'];
+        $street1 = $address['address_line1'];
+        $street2 = $address['address_line2'];
+        $city = $address['locality'];
+        $state = $address['administrative_area'];
+        $zip = $address['postal_code'];
+      }
+
+      $order_info = [];
+      $order_info[0] = array('Order ID', 'FirstName', 'LastName', 'Street1', 'Street2', 'City', 'State', 'Zip', 'Phone', 'Model', 'Price', 'Qty', 'Tax_Chg', 'Ship_Chg', 'Order_Notes');
+      foreach ($line_items as $line_item) {
+        \Drupal::logger('pcx_order_export')->notice("Line item: {$line_item['sku']} for order: #{$order->id()}");
+
+        $model = $line_item['sku'];
+        $price = number_format((float)$line_item['unit_price'], 2, '.', '');
+        $shipping_price_number = number_format((float)$line_item['shipping_price'], 2, '.', '');
+        $qty = (int) $line_item['quantity'];
+        $tax = 0;
+        $ship = $shipments[0]->get('amount')->getValue();
+        $ship =number_format((float)$ship[0]['number'], 2, '.', '');
+        $notes = '';
+        $order_info[] = array($order_id, $first_name, $last_name, $street1, $street2, $city, $state, $zip, $phone, $model, $price, $qty, $tax, $shipping_price_number, $notes);
+      }
+
+      $file_name = $path.'/pcx_order_export_' . $order_id . '_' . date('Y-m-d-G-i-s') . '.csv';
+      \Drupal::logger('pcx_order_export')->notice("Exporting file to: $file_name for order: #{$order->id()}");
+
+      if ( $fp = fopen($file_name, "w") ) {
+        foreach ($order_info as $line) {
+          fputcsv($fp, $line, ',');
+        }
+        fclose($fp);
+
+        if ( file_exists($file_name) && filesize($file_name) !== 0 ) {
+          \Drupal::logger('pcx_order_export')->notice("File exists, setting order to warehouse: #{$order->id()}");
+
+          $workflow = $order->getState()->getWorkflow();
+          $transitions = $workflow->getAllowedTransitions($order->getState()->value, $order);
+          \Drupal::logger('pcx_order_export')->notice("Allowed transitions:\n".print_r($transitions,true));
+
+          if (array_key_exists('export', $transitions)) {
+            $order_export->setPublished(true);
+            $order_export->save();
+
+            $order->getState()->applyTransition($workflow->getTransition('export'));
+            $order->save();
+
+            \Drupal::logger('pcx_order_export')->notice("Order transition suceeded: #{$order->id()}");
+          }
+          else {
+            \Drupal::logger('pcx_order_export')->notice("Order transition failed: #{$order->id()}");
+          }
+        }
+        else {
+          \Drupal::logger('pcx_order_export')->notice("File creation failed: #{$order->id()}");
+        }
+      }
+      else {
+        \Drupal::logger('pcx_order_export')->notice("Error opening new file with fopen: #{$order->id()}");
+      }
+    }
+  }
+}

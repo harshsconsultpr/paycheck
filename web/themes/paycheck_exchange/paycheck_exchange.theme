@@ -1,0 +1,50 @@
+<?php
+/**
+ * @file
+ * Bootstrap sub-theme.
+ *
+ * Place your custom PHP code in this file.
+ */
+
+function paycheck_exchange_form_user_login_form_alter(&$form, &$form_state, $form_id)  {
+	//kint($form);
+	$form['name']['#attributes']['placeholder'] = 'USERNAME';
+	$form['pass']['#attributes']['placeholder'] = 'PASSWORD';
+}
+
+function paycheck_exchange_form_views_exposed_form_alter(&$form, &$form_state, $form_id)  {
+	//kint($form);
+	if ($form['#id'] == 'views-exposed-form-product-display-view-all-products') {
+		$form['search_api_fulltext']['#attributes']['placeholder'] = 'Search';
+	}
+
+}
+
+// ================= Gets the node id to be used in the html.html.twig =================
+function paycheck_exchange_preprocess_html(&$variables) {
+	if ($node = \Drupal::request()->attributes->get('node')) {
+		$variables['attributes']['class'][] = 'page-node-' . $node->id();
+	}
+	$current_path = \Drupal::service('path.current')->getPath();
+	$variables['current_path'] = \Drupal::service('path.alias_manager')->getAliasByPath($current_path);
+	$account = \Drupal::currentUser();
+	$roles = $account->getRoles();
+	// The getRoles() method will return us the machine names, so there is no need
+	// to process roles names additionally. However, I suggest prefixing the names
+	// with "role-", so it's more obvious.
+	foreach ($roles as $role) {
+		$variables['attributes']['class'][] = 'role-' . $role;
+	}
+}
+
+function paycheck_exchange_preprocess_field(&$vars) {
+
+	if (isset($vars['field_name'])) {
+		if ($vars['field_name'] == "field_remote_image") {
+			$vars['#attached']['library'][] = 'paycheck_exchange/flexslider';
+			$vars['#attached']['library'][] = 'paycheck_exchange/remote-slide';
+		}
+	}
+
+
+}

@@ -1,0 +1,5 @@
+name: Paycheck Exchange Facets
+type: module
+description: Programatically create facets for imported products.
+core: 8.x
+package: Custom

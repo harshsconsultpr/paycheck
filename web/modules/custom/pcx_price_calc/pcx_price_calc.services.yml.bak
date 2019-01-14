@@ -1,0 +1,6 @@
+services:
+  pcx_price_calc.custom_price_resolver:
+    class: Drupal\pcx_price_calc\Resolvers\CustomPriceResolver
+    arguments: ['@request_stack']
+    tags:
+      - { name: commerce_price.price_resolver, priority: 600 }

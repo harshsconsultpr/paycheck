@@ -1,0 +1,90 @@
+miniorange_saml_idp.customer_setup:
+  path: /admin/config/people/miniorange_saml_idp/customer_setup
+  defaults:
+    _title: 'Drupal SAML IDP Configuration'
+    _form: \Drupal\miniorange_saml_idp\Form\MiniorangeSamlCustomerSetup
+  requirements:
+    _permission: 'administer site configuration'
+
+miniorange_saml_idp.sp_setup:
+  path: /admin/config/people/miniorange_saml_idp/sp_setup
+  defaults:
+    _title: 'Drupal SAML IDP Configuration'
+    _form: \Drupal\miniorange_saml_idp\Form\MiniorangeSPInformation
+  requirements:
+    _permission: 'administer site configuration'
+
+miniorange_saml_idp.idp_setup:
+  path: /admin/config/people/miniorange_saml_idp/idp_setup
+  defaults:
+    _title: 'Drupal SAML IDP Configuration'
+    _form: \Drupal\miniorange_saml_idp\Form\MiniorangeIDPSetup
+  requirements:
+    _permission: 'administer site configuration'
+
+miniorange_saml_idp.login_options:
+  path: /admin/config/people/miniorange_saml_idp/signon_settings
+  defaults:
+    _title: 'miniOrange SAML Idp Configuration'
+    _form: \Drupal\miniorange_saml_idp\Form\MiniorangeSignonSettings
+  requirements:
+    _permission: 'administer site configuration'
+
+miniorange_saml_idp.mapping:
+  path: /admin/config/people/miniorange_saml_idp/Mapping
+  defaults:
+    _title: 'Drupal SAML IDP Configuration'
+    _form: \Drupal\miniorange_saml_idp\Form\Mapping
+  requirements:
+    _permission: 'administer site configuration'
+
+miniorange_saml_idp.support:
+  path: /admin/config/people/miniorange_saml_idp/Support
+  defaults:
+    _title: 'Drupal SAML IDP Configuration'
+    _form: \Drupal\miniorange_saml_idp\Form\MiniorangeSupport
+  requirements:
+    _permission: 'administer site cofiguration'
+
+miniorange_saml_idp.miniorange_saml_idp_login_request:
+  path: /initiatelogon
+  defaults:
+    _controller: '\Drupal\miniorange_saml_idp\Controller\miniorange_saml_idpController::miniorange_saml_idp_login_request'
+  requirements:
+    _access: 'TRUE'
+
+miniorange_saml_idp.miniorange_saml_idp_initiated_login:
+  path: /saml_user_login
+  defaults:
+    _controller: '\Drupal\miniorange_saml_idp\Controller\miniorange_saml_idpController::miniorange_saml_idp_initiated_login'
+  requirements:
+    _access: 'TRUE'
+    
+miniorange_saml_idp.miniorange_saml_idp_metadata:
+  path: /moidp_metadata
+  defaults:
+    _controller: '\Drupal\miniorange_saml_idp\Controller\miniorange_saml_idpController::miniorange_saml_idp_metadata'
+  requirements:
+    _access: 'TRUE'
+
+miniorange_saml_idp.test_configuration:
+  path: /kofe-config
+  defaults:
+    _controller: '\Drupal\miniorange_saml_idp\Controller\miniorange_saml_idpController::test_configuration'
+  requirements:
+    _access: 'TRUE'
+
+miniorange_saml_idp.saml_logout:
+  path: /user/logout
+  defaults:
+    _controller: '\Drupal\miniorange_saml_idp\Controller\miniorange_saml_idpController::saml_logout'
+  requirements:
+    _access: 'TRUE'
+
+miniorange_saml_idp.licensing:
+  path: /admin/config/people/miniorange_saml_idp/Licensing
+  defaults:
+    _title: 'Drupal SAML IDP Configuration'
+    _form: \Drupal\miniorange_saml_idp\Form\MiniorangeLicensing
+  requirements:
+    _permission: 'administer site configuration'

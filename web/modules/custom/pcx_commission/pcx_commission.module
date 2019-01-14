@@ -1,0 +1,24 @@
+<?php
+
+/**
+ * @file
+ * Contains pcx_commission.module.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+ * Implements hook_help().
+ */
+function pcx_commission_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main module help for the pcx_commission module.
+    case 'help.page.pcx_commission':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Adds commission entity and state management logic.') . '</p>';
+      return $output;
+
+    default:
+  }
+}

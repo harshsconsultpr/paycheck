@@ -1,0 +1,5 @@
+entity.deduction.add_form:
+  route_name: entity.deduction.add_form
+  title: 'Add Deduction'
+  appears_on:
+    - entity.deduction.collection

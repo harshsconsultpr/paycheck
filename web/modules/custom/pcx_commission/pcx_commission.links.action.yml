@@ -1,0 +1,5 @@
+entity.commission.add_form:
+  route_name: entity.commission.add_form
+  title: 'Add Commission'
+  appears_on:
+    - entity.commission.collection

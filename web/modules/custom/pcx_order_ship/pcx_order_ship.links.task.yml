@@ -1,0 +1,22 @@
+# Order Ship routing definition
+order_ship.settings_tab:
+  route_name: order_ship.settings
+  title: 'Settings'
+  base_route: order_ship.settings
+
+entity.order_ship.canonical:
+  route_name: entity.order_ship.canonical
+  base_route: entity.order_ship.canonical
+  title: 'View'
+
+entity.order_ship.edit_form:
+  route_name: entity.order_ship.edit_form
+  base_route: entity.order_ship.canonical
+  title: 'Edit'
+
+entity.order_ship.delete_form:
+  route_name:  entity.order_ship.delete_form
+  base_route:  entity.order_ship.canonical
+  title: Delete
+  weight: 10
+

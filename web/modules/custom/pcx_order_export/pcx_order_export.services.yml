@@ -1,0 +1,6 @@
+# pcx_order_export.services.yml
+services:
+  pcx_order_export_event_subscriber:
+    class: '\Drupal\pcx_order_export\EventSubscriber\PCXOrderExportEventSubscriber'
+    tags:
+      - { name: 'event_subscriber' }

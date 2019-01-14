@@ -1,0 +1,20 @@
+id: d6_ubercart_attribute_value
+label: Ubercart product attribute values
+migration_tags:
+  - Drupal 6
+  - Ubercart
+source:
+  plugin: d6_ubercart_attribute_value
+  constants:
+    langcode: en
+    bundle: attribute
+process:
+  langcode: constants/langcode
+  attribute:
+    plugin: machine_name
+    source: attribute_name
+  name: option_name
+  weight: weight
+destination:
+  plugin: entity:commerce_product_attribute_value
+  destination_module: commerce_product

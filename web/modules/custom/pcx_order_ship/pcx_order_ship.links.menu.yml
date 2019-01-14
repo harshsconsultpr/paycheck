@@ -1,0 +1,14 @@
+
+# Order Ship menu items definition
+entity.order_ship.collection:
+  title: 'Order Ship list'
+  route_name: entity.order_ship.collection
+  description: 'List Order Ship entities'
+  parent: system.admin_structure
+  weight: 100
+
+order_ship.admin.structure.settings:
+  title: Order Ship settings
+  description: 'Configure Order Ship entities'
+  route_name: order_ship.settings
+  parent: system.admin_structure

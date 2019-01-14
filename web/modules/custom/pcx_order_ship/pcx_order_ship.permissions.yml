@@ -1,0 +1,22 @@
+add order ship entities:
+  title: 'Create new Order Ship entities'
+
+administer order ship entities:
+  title: 'Administer Order Ship entities'
+  description: 'Allow to access the administration form to configure Order Ship entities.'
+  restrict access: true
+
+delete order ship entities:
+  title: 'Delete Order Ship entities'
+
+edit order ship entities:
+  title: 'Edit Order Ship entities'
+
+access order ship overview:
+  title: 'Access the Order Ship overview page'
+
+view published order ship entities:
+  title: 'View published Order Ship entities'
+
+view unpublished order ship entities:
+  title: 'View unpublished Order Ship entities'

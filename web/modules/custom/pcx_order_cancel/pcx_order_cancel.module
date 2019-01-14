@@ -1,0 +1,106 @@
+<?php
+
+/**
+ * @file
+ * Contains pcx_order_cancel.module.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+ * Implements hook_help().
+ */
+function pcx_order_cancel_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main module help for the pcx_order_cancel module.
+    case 'help.page.pcx_order_cancel':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Order cancel logic.') . '</p>';
+      return $output;
+
+    default:
+  }
+}
+
+function pcx_order_cancel_cron(){
+  $config = \Drupal::service('config.factory')->getEditable('pcx_order_cancel.settings');
+
+  $query = implode('/', [
+    \Drupal::service('file_system')->realpath(file_default_scheme() . "://"),
+    $config->get('integration_path'),
+    $config->get('integration_glob')
+  ]);
+
+  foreach (glob($query) as $file) {
+    $handle = fopen($file, 'r');
+    if ($handle) {
+      // Read the header row:
+      $row = fgetcsv($handle);
+      if ($row) {
+        $columns = array();
+
+        foreach ($row as $i => $header) {
+          $columns[$i] = trim($header);
+        }
+
+        while ($row = fgetcsv($handle)) {
+          $records = array();
+          $tmp = array();
+          foreach ($row as $i => $field) {
+            $tmp[$columns[$i]] = $field;
+          }
+          $records[] = $tmp;
+
+          // Process items
+          foreach($records as $record) {
+            $status = false;
+            switch ($record['Status']) {
+              case 'Backorder':
+                $status = 'cancel';
+                break;
+              case 'Return':
+                $status = 'cancel';
+                break;
+              case 'Cancel':
+                $status = 'cancel';
+                break;
+            }
+
+            $order = \Drupal\commerce_order\Entity\Order::load($record['Po_Number']);
+
+            if ($order && $status && $status == "cancel") {
+              \Drupal::logger('pcx_order_cancel')->notice("Processing cancellation for order: #{$order->id()}");
+
+              $workflow = $order->getState()->getWorkflow();
+              $transitions = $workflow->getAllowedTransitions($order->getState()->value, $order);
+
+              if (array_key_exists('cancel', $transitions)) {
+                $notes = $order->getData('notes');
+                $order->setData('notes', $notes."\n".$data['note']);
+
+                $order->getState()->applyTransition($workflow->getTransition('cancel'));
+                $order->save();
+
+                \Drupal::logger('pcx_order_ship')->notice("Creating Order Cancel for order: #{$order->id()}");
+
+                $order_cancel = \Drupal\pcx_order_cancel\Entity\OrderCancel::create([
+                  'order_id' => $order->id(),
+                  'status' => 1
+                ]);
+                $order_cancel->save();
+              }
+            }
+          }
+        }
+      }
+      fclose($handle);
+      rename($file, implode('/', [
+          \Drupal::service('file_system')->realpath(file_default_scheme() . "://"),
+          $config->get('processed_path'),
+          basename($file)
+        ])
+      );
+    }
+  }
+}

@@ -1,0 +1,18 @@
+diff --git a/src/Utility/FieldsHelper.php b/src/Utility/FieldsHelper.php
+index 9e612cf4..9b075ef5 100644
+--- a/src/Utility/FieldsHelper.php
++++ b/src/Utility/FieldsHelper.php
+@@ -197,11 +197,9 @@ public function extractFieldValues(TypedDataInterface $data) {
+     $definition = $data->getDataDefinition();
+     if ($definition instanceof ComplexDataDefinitionInterface) {
+       $property = $definition->getMainPropertyName();
+-      if (isset($value[$property])) {
+-        return [$value[$property]];
+-      }
++      return isset($value[$property]) ? [$value[$property]] : [];
+     }
+-    elseif (is_array($value)) {
++    if (is_array($value)) {
+       return array_values($value);
+     }
+     return [$value];

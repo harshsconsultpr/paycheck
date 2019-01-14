@@ -1,0 +1,89 @@
+<?php
+
+/**
+ * @file
+ * Contains pcx_catalog_cleanup.module.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Database\Database;
+
+/**
+ * Implements hook_help().
+ */
+function pcx_catalog_cleanup_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main module help for the pcx_catalog_cleanup module.
+    case 'help.page.pcx_catalog_cleanup':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Catalog cleanup logic.') . '</p>';
+      return $output;
+
+    default:
+  }
+}
+
+function pcx_catalog_cleanup_cron() {
+  // get all products
+  $products = Database::getConnection()->query(
+    "SELECT
+      vsn.field_abt_product_vsn_value as name,
+      product.product_id as value
+    FROM
+      commerce_product_field_data product
+    LEFT JOIN
+      commerce_product__field_abt_product_vsn vsn
+        ON vsn.entity_id = product.product_id
+    ;"
+  )->fetchAll(PDO::FETCH_KEY_PAIR);
+  // \Drupal::logger('pcx_catalog_cleanup.cron')->notice("<pre>".count($products)." PRODUCTS: ".print_r($products,true)."</pre>");
+
+  $config = \Drupal::service('config.factory')->getEditable('pcx_catalog_cleanup.settings');
+
+  $query = implode('/', [
+    \Drupal::service('file_system')->realpath(file_default_scheme() . "://"),
+    $config->get('integration_path'),
+    $config->get('integration_glob')
+  ]);
+
+  foreach (glob($query) as $file) {
+    $handle = fopen($file, 'r');
+    if ($handle) {
+      // Read the header row:
+      $row = fgetcsv($handle);
+      if ($row) {
+        $remove = [];
+
+        while ($row = fgetcsv($handle)) {
+          if (isset($products[$row[0]])) {
+            $remove[] = $products[$row[0]];
+          }
+        }
+
+        \Drupal::logger('pcx_catalog_cleanup.cron')->notice("<pre>".count($remove)." REMOVE: ".print_r($remove,true)."</pre>");
+
+        foreach ($remove as $product_id) {
+          if ( $product = \Drupal\commerce_product\Entity\Product::load( $product_id ) ) {
+            // \Drupal::logger('pcx_catalog_cleanup.cron')->notice("<pre>{$product->id()}: unpublishing product</pre>");
+            $product->set('status', FALSE);
+            $product->save();
+
+            $variations = $product->getVariations();
+            foreach ($variations as $variation) {
+              $variation->setActive(FALSE);
+              $variation->save();
+            }
+          }
+        }
+      }
+      fclose($handle);
+      rename($file, implode('/', [
+          \Drupal::service('file_system')->realpath(file_default_scheme() . "://"),
+          $config->get('processed_path'),
+          basename($file)
+        ])
+      );
+    }
+  }
+}

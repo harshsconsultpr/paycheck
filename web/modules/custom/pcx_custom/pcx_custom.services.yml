@@ -1,0 +1,14 @@
+services:
+ pcx_custom.route_subscriber:
+    class: Drupal\pcx_custom\Routing\RouteSubscriber
+    tags:
+      - { name: event_subscriber }
+ pcx_custom.access_checker:
+    class: Drupal\pcx_custom\Access\CustomAccessCheck
+    arguments: ['@entity.manager']
+    tags:
+      - { name: access_check, applies_to: _custom_access_check }
+ pcx_custom.breadcrumb:
+   class: Drupal\pcx_custom\Breadcrumb\PCXCustomProductBreadCrumbBuilder
+   tags:
+    - { name: breadcrumb_builder, priority: 100 }
